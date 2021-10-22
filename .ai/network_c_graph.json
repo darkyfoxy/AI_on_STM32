@@ -454,12 +454,12 @@
     "c_nodes_n": 6,
     "c_tensors_n": 13,
     "data_alignment": 4,
-    "date_time": "Tue Oct 19 13:31:59 2021",
+    "date_time": "Fri Oct 22 16:55:00 2021",
     "inputs": [
         "modelInput_output"
     ],
     "macc": 199760,
-    "model_name": "mnist_2",
+    "model_name": "network",
     "outputs": [
         "modelOutput_output"
     ],

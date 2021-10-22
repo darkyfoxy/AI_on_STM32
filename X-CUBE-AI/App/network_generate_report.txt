@@ -1,19 +1,19 @@
 Neural Network Tools for STM32AI v1.4.1 (STM.ai v6.0.0-RC6)
-Created date       : 2021-10-19 13:32:02
-Parameters         : generate --name network -m C:/Users/vlavi/Downloads/MNIST (2).onnx --type onnx --compression 1 --verbosity 1 --workspace C:\Users\vlavi\AppData\Local\Temp\mxAI_workspace8410353994730013341614201860224643 --output C:\Users\vlavi\.stm32cubemx
+Created date       : 2021-10-22 16:55:04
+Parameters         : generate --name network -m E:/base/base_data/project/STM/AI_on_STM32/network/network.onnx --type onnx --compression 1 --verbosity 1 --workspace C:\Users\vlavi\AppData\Local\Temp\mxAI_workspace25998202719730015194888585875318795 --output C:\Users\vlavi\.stm32cubemx
 
 Exec/report summary (generate)
 ------------------------------------------------------------------------------------------------------------------------
-model file         : C:\Users\vlavi\Downloads\MNIST (2).onnx
+model file         : E:\base\base_data\project\STM\AI_on_STM32\network\network.onnx
 type               : onnx
 c_name             : network
 compression        : None
 quantize           : None
-workspace dir      : C:\Users\vlavi\AppData\Local\Temp\mxAI_workspace8410353994730013341614201860224643
+workspace dir      : C:\Users\vlavi\AppData\Local\Temp\mxAI_workspace25998202719730015194888585875318795
 output dir         : C:\Users\vlavi\.stm32cubemx
 
-model_name         : MNIST_2
-model_hash         : df31937334d89e3449d3ab09c1c6059b
+model_name         : network
+model_hash         : a2ef08200c36a1feb49a251fb3584f03
 input              : modelInput [784 items, 3.06 KiB, ai_float, FLOAT32, (1, 1, 784)]
 inputs (total)     : 3.06 KiB
 output             : modelOutput [10 items, 40 B, ai_float, FLOAT32, (1, 1, 10)]
@@ -24,7 +24,7 @@ weights (ro)       : 796,840 B (778.16 KiB)
 activations (rw)   : 1,600 B (1.56 KiB) 
 ram (total)        : 4,776 B (4.66 KiB) = 1,600 + 3,136 + 40
 
-Model name - MNIST_2 ['modelInput'] ['modelOutput']
+Model name - network ['modelInput'] ['modelOutput']
 --------------------------------------------------------------------------------------------------------------------------------------
 id   layer (type)                 shape     param/size        macc      connected to   |   c_size          c_macc          c_type    
 --------------------------------------------------------------------------------------------------------------------------------------
@@ -58,7 +58,7 @@ model/c-model: macc=199,760/199,760  weights=796,840/796,840  activations=--/1,6
 
 Generated C-graph summary
 ------------------------------------------------------------------------------------------------------------------------
-model name         : mnist_2
+model name         : network
 c-name             : network
 c-node #           : 6
 c-array #          : 13

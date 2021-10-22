@@ -1,6 +1,8 @@
 Debug/
 Release/
 
+AI_on_STM32 Debug.launch
+
 # Prerequisites
 *.d
 

@@ -1,13 +1,7 @@
 #include "ili9163.h"
-#include <stdio.h> // printf
-#include <stdarg.h> // va_list, va_start, va_arg, va_end
 
-uint16_t frameBuffer[BUFSIZE] = {0};
 
 extern SPI_HandleTypeDef DISP_SPI;
-extern uint8_t SPI_DMA_FL;
-
-//extern uint8_t SPI_DAM_FLAG;
 
 void ILI9163_writeCommand(uint8_t address) {
 	HAL_GPIO_WritePin(DISP_CS_Port, DISP_CS_Pin, 0);
@@ -128,16 +122,16 @@ void ILI9163_init(int rotation) {
 
 
 	ILI9163_writeCommand(ILI9163_CMD_SET_COLUMN_ADDRESS);
-	ILI9163_writeData(0x00); // XSH
-	ILI9163_writeData(0x00); // XSL
-	ILI9163_writeData(0x00); // XEH
-	ILI9163_writeData(ILI9163_HEIGHT-1); // XEL (128 pixels x)
+	ILI9163_writeData(0x00);
+	ILI9163_writeData(0x00);
+	ILI9163_writeData(0x00);
+	ILI9163_writeData(ILI9163_HEIGHT-1);
 
 	ILI9163_writeCommand(ILI9163_CMD_SET_PAGE_ADDRESS);
 	ILI9163_writeData(0x00);
 	ILI9163_writeData(0x00);
 	ILI9163_writeData(0x00);
-	ILI9163_writeData(ILI9163_WIDTH-1); // 160 pixels y
+	ILI9163_writeData(ILI9163_WIDTH-1);
 
 	ILI9163_writeCommand(ILI9163_CMD_SET_ADDRESS_MODE);
 	if(rotation)
@@ -150,11 +144,6 @@ void ILI9163_init(int rotation) {
 	ILI9163_writeCommand(ILI9163_CMD_WRITE_MEMORY_START);
 }
 
-void ILI9163_newFrame()
-{
-	for(uint32_t i= 0; i < (ILI9163_WIDTH*ILI9163_HEIGHT); i++)
-		frameBuffer[i] = 0xFFFF;
-}
 
 void ILI9163_render(uint16_t *frameBuffer)
 {
@@ -163,8 +152,7 @@ void ILI9163_render(uint16_t *frameBuffer)
 	HAL_GPIO_WritePin(DISP_DC_Port, DISP_DC_Pin, 1);
 
 	uint8_t test = 0;
-	uint8_t* ptest = &test;
-	HAL_SPI_Transmit(&DISP_SPI, ptest, 1, 1000);
+	HAL_SPI_Transmit(&DISP_SPI, &test, 1, 1000);
 
 	HAL_SPI_Transmit_DMA(&DISP_SPI, (uint8_t*)frameBuffer, BUFSIZE*2);
 

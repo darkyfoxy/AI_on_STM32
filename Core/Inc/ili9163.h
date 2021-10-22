@@ -91,20 +91,12 @@ extern SPI_HandleTypeDef hspi2;
 
 void ILI9163_init(int rotation);
 
-void ILI9163_newFrame();
 void ILI9163_render(uint16_t *frameBuffer);
 
 void ILI9163_drawPixel(uint16_t *frameBuffer, uint8_t x, uint8_t y, uint16_t color);
-void ILI9163_drawLine(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint16_t color);
 void ILI9163_drawRect(uint16_t *frameBuffer, uint8_t x1,uint8_t y1,uint8_t x2,uint8_t y2, uint8_t thickness, uint16_t color);
 void ILI9163_fillRect(uint16_t *frameBuffer, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint16_t color);
-void ILI9163_drawCircle(uint8_t centerX, uint8_t centerY, uint8_t radius, uint16_t color);
-void ILI9163_fillCircle(uint8_t centerX, uint8_t centerY, uint8_t radius, uint16_t color);
-void ILI9163_fillDisplay(uint16_t color);
 
 void ILI9163_drawChar(uint16_t *frameBuffer, uint8_t x, uint8_t y, char ch, FontDef font, uint16_t color);
-
-void ILI9163_drawString(uint8_t x, uint8_t y, FontDef font, uint16_t color, const char *string);
-void ILI9163_drawStringF(uint8_t x, uint8_t y, FontDef font, uint16_t color, char *szFormat, ...);
 
 #endif

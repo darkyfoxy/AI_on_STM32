@@ -64,8 +64,8 @@ extern SPI_HandleTypeDef hspi2;
 extern TIM_HandleTypeDef htim6;
 /* USER CODE BEGIN EV */
 
-extern Streem_State_t streem0;
-extern Streem_State_t streem1;
+extern Streem_State_t SPI_State;
+extern Streem_State_t DCMI_State;
 
 extern DCMI_HandleTypeDef hdcmi;
 
@@ -232,15 +232,15 @@ void SPI2_IRQHandler(void)
 void DMA1_Stream7_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream7_IRQn 0 */
-  int test = __HAL_DMA_GET_FLAG(&hdma_spi2_tx, DMA_FLAG_HTIF3_7);
+  int full_transmit_flag = __HAL_DMA_GET_FLAG(&hdma_spi2_tx, DMA_FLAG_HTIF3_7);
   /* USER CODE END DMA1_Stream7_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_spi2_tx);
   /* USER CODE BEGIN DMA1_Stream7_IRQn 1 */
 
-  if((test & DMA_FLAG_HTIF3_7) == 0){
+  if((full_transmit_flag & DMA_FLAG_HTIF3_7) == 0){
 	  HAL_SPI_DMAStop(&hspi2);
 	  HAL_GPIO_WritePin(DISP_CS_Port, DISP_CS_Pin, 1);
-	  streem0 = REDY;
+	  SPI_State = REDY;
   }
   /* USER CODE END DMA1_Stream7_IRQn 1 */
 }
@@ -274,7 +274,7 @@ void DMA2_Stream1_IRQHandler(void)
 
   HAL_DCMI_Suspend(&hdcmi);
   HAL_DCMI_Stop(&hdcmi);
-  streem1 = REDY;
+  DCMI_State = REDY;
   /* USER CODE END DMA2_Stream1_IRQn 1 */
 }
 

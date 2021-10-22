@@ -26,7 +26,6 @@
 #include "ov2640.h"
 #include "ov2640_regs.h"
 #include "ili9163.h"
-#include "testimg.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -36,7 +35,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define MY_DEBUG
 #define GUI
 /* USER CODE END PD */
 
@@ -67,17 +65,16 @@ UART_HandleTypeDef huart3;
 sensor_t sensor = {0};
 int ret;
 
-Streem_State_t streem0;
-Streem_State_t streem1;
+Streem_State_t SPI_State;
+Streem_State_t DCMI_State;
 
 uint8_t fps_counter = 0;
 uint8_t fps = 0;
 
 uint8_t fps_buf[4];
 
+//defined in sensor.h
 #if defined RGB565_128X128
-//__attribute__((section(".dma_buffer")))int8_t imag_b0[RGB565_128X128_BUF_SIZE] = {0};
-//__attribute__((section(".dma_buffer")))int8_t imag_b1[RGB565_128X128_BUF_SIZE] = {0};
 int8_t imag_b0[RGB565_128X128_BUF_SIZE] = {0};
 int8_t imag_b1[RGB565_128X128_BUF_SIZE] = {0};
 int8_t imag_b2[RGB565_128X128_BUF_SIZE] = {0};
@@ -176,53 +173,54 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim6);
   HAL_TIM_Base_Start(&htim6);
 
-  streem1 = REDY;
-  streem0 = REDY;
+  DCMI_State = REDY;
+  SPI_State = REDY;
   uint8_t order = 0;
+
+  int8_t *hdmi_buff_pointer;
+  int8_t *spi_buff_pointer;
+  int8_t *ai_buff_pointer;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-	  if(streem1 == REDY && streem0 == REDY)
+	  if(DCMI_State == REDY && SPI_State == REDY)
 	  {
-		  if(order == 0){
-			  sensor.snapshot(hdcmi, (int32_t *)imag_b0);
-			  streem1 = BUSY;
-			  ILI9163_render((uint16_t *)imag_b1);
-			  streem0 = BUSY;
-			  AI_block((uint16_t *)imag_b2);
-			  fps_counter++;
-		  }
-		  if(order == 1)
-		  {
-			  sensor.snapshot(hdcmi, (int32_t *)imag_b1);
-			  streem1 = BUSY;
-			  ILI9163_render((uint16_t *)imag_b2);
-			  streem0 = BUSY;
-			  AI_block((uint16_t *)imag_b0);
-			  fps_counter++;
-		  }
-		  if(order == 2)
-		  {
-			  sensor.snapshot(hdcmi, (int32_t *)imag_b2);
-			  streem1 = BUSY;
-			  ILI9163_render((uint16_t *)imag_b0);
-			  streem0 = BUSY;
-			  AI_block((uint16_t *)imag_b1);
-			  fps_counter++;
+		  switch(order){
+		  case 0:
+			  hdmi_buff_pointer = imag_b0;
+			  spi_buff_pointer = imag_b1;
+			  ai_buff_pointer = imag_b2;
+			  break;
+		  case 1:
+			  hdmi_buff_pointer = imag_b1;
+			  spi_buff_pointer = imag_b2;
+			  ai_buff_pointer = imag_b0;
+			  break;
+		  default:
+			  hdmi_buff_pointer = imag_b2;
+			  spi_buff_pointer = imag_b0;
+			  ai_buff_pointer = imag_b1;
 			  order = -1;
 		  }
-		  order++;
 
+		  sensor.snapshot(hdcmi, (int32_t *)hdmi_buff_pointer);
+		  DCMI_State = BUSY;
+		  ILI9163_render((uint16_t *)spi_buff_pointer);
+		  SPI_State = BUSY;
+		  AI_block((uint16_t *)ai_buff_pointer);
+		  fps_counter++;
+		  order++;
 	  }
 
+#if defined AI_PROCESS
     /* USER CODE END WHILE */
 
-  //MX_X_CUBE_AI_Process();
+  MX_X_CUBE_AI_Process();
     /* USER CODE BEGIN 3 */
+#endif
   }
   /* USER CODE END 3 */
 }
@@ -679,9 +677,9 @@ static void sensor_setting(I2C_HandleTypeDef *camera_i2c1)
 	sensor.framesize = FRAMESIZE_VGA;
 	#endif
 
-	  sensor.contrast_level = 0;
-	  sensor.brightness_level = 0;
-	  sensor.saturation_level = 0;
+	  sensor.contrast_level = 2;
+	  sensor.brightness_level = 2;
+	  sensor.saturation_level = 2;
 
 	  if(sensor.reset(&sensor) == -1)
 	  {
@@ -708,13 +706,16 @@ static uint8_t Ai_calculate(uint16_t *frameBuffer)
 			float R = (float)(RGB_sample >> 11) / 128.0;
 			float pre_sum = (R + G + B);
 			float sum = pre_sum < 0.3 ? (1-pre_sum) : 0.0;
+
 			input[28*i + j] = (sum - 0.1307) / 0.3081;
-#if defined GUI
+
+
+			#if defined GUI
 			uint16_t gray = (uint16_t)(sum * 31);
 			uint16_t RGB_gray =  (gray << 11) | (gray << 6) |  gray;
 
 			frameBuffer[(128*100) + 100 + (i*128) + (j)] = RGB_gray;
-#endif
+			#endif
 		}
 	}
 
@@ -779,10 +780,12 @@ void AI_block(uint16_t *imag_trans)
   ILI9163_drawChar(imag_trans, 93 - (1*11) + 10, 1, 's', Font_11x18, 0x0);
   ILI9163_drawChar(imag_trans, 89 + 10, 1, ':', Font_11x18, 0x0);
 #endif
+
   Non_HAL_CON_UInt_to_DecString_8bit(fps, fps_buf, sizeof(fps_buf));
   for(int i = 0; i < 3; i++)
   {
-	  if(fps_buf[i] != 0x0){
+	  if(fps_buf[i] != 0x0)
+	  {
 		  ILI9163_drawChar(imag_trans, 95 + (i*11) + 10, 1, fps_buf[i], Font_11x18, 0x0);
 	  }
   }
