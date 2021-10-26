@@ -36,6 +36,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define GUI
+//#define AI_PROCESS_VALIDATE
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -106,7 +107,7 @@ static uint8_t Ai_calculate(uint16_t *frameBuffer);
 
 void Non_HAL_CON_UInt_to_DecString_8bit(uint8_t data, uint8_t *decstr, uint8_t sizebuf);
 
-void AI_block(uint16_t *imag_trans);
+void MNIST_AI_block(uint16_t *imag_trans);
 //static void UART_Transmit();
 /* USER CODE END PFP */
 
@@ -162,7 +163,7 @@ int main(void)
   MX_TIM6_Init();
   MX_X_CUBE_AI_Init();
   /* USER CODE BEGIN 2 */
-
+#ifndef AI_PROCESS_VALIDATE
   HAL_GPIO_WritePin(GPIOE, RST1_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(GPIOE, PWDN1_Pin, GPIO_PIN_RESET);
 
@@ -180,12 +181,14 @@ int main(void)
   int8_t *hdmi_buff_pointer;
   int8_t *spi_buff_pointer;
   int8_t *ai_buff_pointer;
+#endif
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+#ifndef AI_PROCESS_VALIDATE
 	  if(DCMI_State == REDY && SPI_State == REDY)
 	  {
 		  switch(order){
@@ -210,12 +213,12 @@ int main(void)
 		  DCMI_State = BUSY;
 		  ILI9163_render((uint16_t *)spi_buff_pointer);
 		  SPI_State = BUSY;
-		  AI_block((uint16_t *)ai_buff_pointer);
+		  MNIST_AI_block((uint16_t *)ai_buff_pointer);
 		  fps_counter++;
 		  order++;
 	  }
 
-#if defined AI_PROCESS
+#else
     /* USER CODE END WHILE */
 
   MX_X_CUBE_AI_Process();
@@ -651,6 +654,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+#ifndef AI_PROCESS_VALIDATE
 static void sensor_setting(I2C_HandleTypeDef *camera_i2c1)
 {
 	  sensor.bus.i2c = camera_i2c1;
@@ -754,10 +758,10 @@ void Non_HAL_CON_UInt_to_DecString_8bit(uint8_t data, uint8_t *decstr, uint8_t s
     *decstr = 0;
 }
 
-void AI_block(uint16_t *imag_trans)
+void MNIST_AI_block(uint16_t *imag_trans)
 {
 #if defined GUI
-  ILI9163_drawRect(imag_trans, 21-10, 21, 107-10, 107,  1,  0x1f<<11);
+  ILI9163_drawRect(imag_trans, 21-10, 21, 107-10, 107,  2,  0x1f<<11);
 #endif
 
   uint8_t number = Ai_calculate(imag_trans) + 0x30;
@@ -790,6 +794,7 @@ void AI_block(uint16_t *imag_trans)
 	  }
   }
 }
+#endif
 /* USER CODE END 4 */
 
 /**

@@ -1,15 +1,15 @@
 Neural Network Tools for STM32AI v1.4.1 (STM.ai v6.0.0-RC6)
-Created date       : 2021-10-22 16:55:04
-Parameters         : generate --name network -m E:/base/base_data/project/STM/AI_on_STM32/network/network.onnx --type onnx --compression 1 --verbosity 1 --workspace C:\Users\vlavi\AppData\Local\Temp\mxAI_workspace25998202719730015194888585875318795 --output C:\Users\vlavi\.stm32cubemx
+Created date       : 2021-10-25 18:12:20
+Parameters         : generate --name network -m E:/base/base_data/project/STM/AI_on_STM32/network_MNIST/network.onnx --type onnx --compression 1 --verbosity 1 --workspace C:\Users\vlavi\AppData\Local\Temp\mxAI_workspace5238202751820003875581642091186432 --output C:\Users\vlavi\.stm32cubemx
 
 Exec/report summary (generate)
 ------------------------------------------------------------------------------------------------------------------------
-model file         : E:\base\base_data\project\STM\AI_on_STM32\network\network.onnx
+model file         : E:\base\base_data\project\STM\AI_on_STM32\network_MNIST\network.onnx
 type               : onnx
 c_name             : network
 compression        : None
 quantize           : None
-workspace dir      : C:\Users\vlavi\AppData\Local\Temp\mxAI_workspace25998202719730015194888585875318795
+workspace dir      : C:\Users\vlavi\AppData\Local\Temp\mxAI_workspace5238202751820003875581642091186432
 output dir         : C:\Users\vlavi\.stm32cubemx
 
 model_name         : network
