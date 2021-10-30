@@ -103,11 +103,13 @@ static void MX_TIM6_Init(void);
 /* USER CODE BEGIN PFP */
 static void sensor_setting(I2C_HandleTypeDef *camera_i2c1);
 
-static uint8_t Ai_calculate(uint16_t *frameBuffer);
+static uint8_t MNIST_Ai_calculate(uint16_t *frameBuffer);
+static uint8_t CIFAR_Ai_calculate(uint16_t *frameBuffer);
 
 void Non_HAL_CON_UInt_to_DecString_8bit(uint8_t data, uint8_t *decstr, uint8_t sizebuf);
 
 void MNIST_AI_block(uint16_t *imag_trans);
+void CIFAR_AI_block(uint16_t *imag_trans);
 //static void UART_Transmit();
 /* USER CODE END PFP */
 
@@ -213,7 +215,8 @@ int main(void)
 		  DCMI_State = BUSY;
 		  ILI9163_render((uint16_t *)spi_buff_pointer);
 		  SPI_State = BUSY;
-		  MNIST_AI_block((uint16_t *)ai_buff_pointer);
+		  CIFAR_AI_block((uint16_t *)ai_buff_pointer);
+		  //MNIST_AI_block((uint16_t *)ai_buff_pointer);
 		  fps_counter++;
 		  order++;
 	  }
@@ -695,7 +698,47 @@ static void sensor_setting(I2C_HandleTypeDef *camera_i2c1)
 	  }
 }
 
-static uint8_t Ai_calculate(uint16_t *frameBuffer)
+static uint8_t CIFAR_Ai_calculate(uint16_t *frameBuffer)
+{
+	float input[32][32][3];
+	float output[10];
+
+	for(int i = 0; i < 32; i ++)
+	{
+		for(int j = 0; j < 32; j ++)
+		{
+			uint16_t RGB_sample = frameBuffer[(128*32) + 32 + (i*128*2) + (j*2)];
+			float B = (float)(RGB_sample & 0x1f) / 32.0;
+			float G = (float)((RGB_sample >> 6) & 0x1f) / 32.0;
+			float R = (float)(RGB_sample >> 11) / 32.0;
+
+			input[i][j][0] = (R - 0.1307) / 0.3081;
+			input[i][j][1] = (G - 0.1307) / 0.3081;
+			input[i][j][2] = (B - 0.1307) / 0.3081;
+		}
+	}
+
+
+
+	SCB_EnableDCache();
+	my_ai_run((void *)input, (void *)output);
+	SCB_DisableDCache();
+
+	uint8_t res=0;
+	float max = output[0];
+
+	for(int g = 1; g < 10; g++)
+	{
+		if(max < output[g])
+		{
+			res = g;
+			max = output[g];
+		}
+	}
+	return res;
+}
+
+static uint8_t MNIST_Ai_calculate(uint16_t *frameBuffer)
 {
 	float input[28*28];
 	float output[10];
@@ -764,7 +807,7 @@ void MNIST_AI_block(uint16_t *imag_trans)
   ILI9163_drawRect(imag_trans, 21-10, 21, 107-10, 107,  2,  0x1f<<11);
 #endif
 
-  uint8_t number = Ai_calculate(imag_trans) + 0x30;
+  uint8_t number = MNIST_Ai_calculate(imag_trans) + 0x30;
 
 #if defined GUI
   ILI9163_fillRect(imag_trans, 0,0, 128, 20, 0xffff);
@@ -783,6 +826,52 @@ void MNIST_AI_block(uint16_t *imag_trans)
   ILI9163_drawChar(imag_trans, 93 - (2*11) + 10, 1, 'p', Font_11x18, 0x0);
   ILI9163_drawChar(imag_trans, 93 - (1*11) + 10, 1, 's', Font_11x18, 0x0);
   ILI9163_drawChar(imag_trans, 89 + 10, 1, ':', Font_11x18, 0x0);
+#endif
+
+  Non_HAL_CON_UInt_to_DecString_8bit(fps, fps_buf, sizeof(fps_buf));
+  for(int i = 0; i < 3; i++)
+  {
+	  if(fps_buf[i] != 0x0)
+	  {
+		  ILI9163_drawChar(imag_trans, 95 + (i*11) + 10, 1, fps_buf[i], Font_11x18, 0x0);
+	  }
+  }
+}
+
+void CIFAR_AI_block(uint16_t *imag_trans)
+{
+#if defined GUI
+  ILI9163_drawRect(imag_trans, 30, 30, 98, 98,  2,  0x1f<<11);
+  char lable[10][11] =  {"airplane",
+						 "automobile",
+						 "bird",
+						 "cat",
+						 "deer",
+						 "dog",
+						 "frog",
+						 "horse",
+						 "ship",
+						 "truck"};
+#endif
+
+  uint8_t number = CIFAR_Ai_calculate(imag_trans);
+
+#if defined GUI
+  ILI9163_fillRect(imag_trans, 60, 0, 128, 20, 0xffff);
+  ILI9163_fillRect(imag_trans, 0, 128-20, 128, 128, 0xffff);
+
+
+  ILI9163_drawChar(imag_trans, 93 - (3*11) + 10, 1, 'f', Font_11x18, 0x0);
+  ILI9163_drawChar(imag_trans, 93 - (2*11) + 10, 1, 'p', Font_11x18, 0x0);
+  ILI9163_drawChar(imag_trans, 93 - (1*11) + 10, 1, 's', Font_11x18, 0x0);
+  ILI9163_drawChar(imag_trans, 89 + 10, 1, ':', Font_11x18, 0x0);
+
+  for(int i = 0; lable[number][i] != 0; i++)
+  {
+	  ILI9163_drawChar(imag_trans, 1 + (i*11), 109, lable[number][i], Font_11x18, 0x0);
+  }
+
+  ILI9163_drawChar(imag_trans, 128-8, 109, number+0x30, Font_7x10, 0x0);
 #endif
 
   Non_HAL_CON_UInt_to_DecString_8bit(fps, fps_buf, sizeof(fps_buf));
