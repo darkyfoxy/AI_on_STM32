@@ -45,11 +45,11 @@ Neural network implementation on STM32 with Cube-AI.
 
 **Flash comparison***
 
-| Сompression*** |   ONNX    |   Keras   |  TF Lite  | TF Lite (Quant) |
-| :------------- | :-------: | :-------: | :-------: | :-------------: |
-| None           | 778.16 KB | 778.16 KB | 778.16 KB |    195.74 KB    |
-| x4             | 203.60 KB | 203.60 KB | 203.60 KB |  Not supported  |
-| x8             | 105.63 KB | 105.63 KB | 105.63 KB |  Not supported  |
+| Сompression |   ONNX    |   Keras   |  TF Lite  | TF Lite (Quant) |
+| :---------- | :-------: | :-------: | :-------: | :-------------: |
+| None        | 778.16 KB | 778.16 KB | 778.16 KB |    195.74 KB    |
+| x4          | 203.60 KB | 203.60 KB | 203.60 KB |  Not supported  |
+| x8          | 105.63 KB | 105.63 KB | 105.63 KB |  Not supported  |
 
 **RAM comparison***
 
@@ -79,10 +79,9 @@ Neural network implementation on STM32 with Cube-AI.
 
 **Validation on target (Validation on desktop).
 
-Из [документации от STMicroelectronics](https://www.st.com/resource/en/user_manual/dm00570145-getting-started-with-xcubeai-expansion-package-for-artificial-intelligence-ai-stmicroelectronics.pdf) (п. 6.1) компрессия размера весов и смещений основана на методе [k-средних](https://ru.wikipedia.org/wiki/Метод_k-средних) и применима только к полносвязным слоям. В моделях со сверточными слоями Cube-Ai выдает предупреждение: WARNING: no weight was compressed.
+Из [документации от STMicroelectronics](https://www.st.com/resource/en/user_manual/dm00570145-getting-started-with-xcubeai-expansion-package-for-artificial-intelligence-ai-stmicroelectronics.pdf) (п. 6.1) компрессия размера весов и смещений основана на методе [k-средних](https://ru.wikipedia.org/wiki/Метод_k-средних) и применима только к полносвязным слоям.
 
- ![youtube](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)
-[Видео демонстрации работы](https://www.youtube.com/watch?v=OYYefBLlM6g).
+[Видео демонстрации работы](https://www.youtube.com/watch?v=OYYefBLlM6g) ![youtube](https://img.shields.io/youtube/views/OYYefBLlM6g?style=social).
 
 ## Example with CIFAR10 Dataset
 
@@ -95,20 +94,61 @@ Neural network implementation on STM32 with Cube-AI.
 
 ![cifar10](img/cifar.png)
 
-Нейронная сеть была обучена с помощью PyTorch на датасетe CIFAR10.
+**PyTorch and ONNX**
 
-Системные требования для вычисления нейронной сети (без сжатия): 
+Нейронная сеть была обучена с помощью PyTorch на датасетe CIFAR10. После этого экспортирована в граф вычислений в формате **ONNX**.
 
-- Flash = 1.04 MB;
+PyTorch экспортирует модель в ONNX таким образом, что идет оптимизация полностязного слоя в матричное умножение (GeMM). После этого  X-CUBE-AI не может произвести компрессию размера весов и смещений. Как это исправить я не знаю. Если кто знает, сообщите мне)
 
-- RAM = 148.41 КВ.
+**Keras**
 
-Точность классификации: 81.30 %;
+Нейронная сеть была обучена с помощью TensorFlow на датасетe CIFAR10. После этого сохранена в формате **Keras** H5.
 
-Время вычисления: 285.5 ms.
+**TensorFlow Lite**
 
-![youtube](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)
-[Видео демонстрации работы](https://www.youtube.com/watch?v=fylVEovoXl0).
+Нейронная сеть была обучена с помощью TensorFlow на датасетe CIFAR10. После этого сохранена в формате **TF Lite** без квантования и с квантованием весов до *int8* (**TF Lite (Quant)**).
+
+---
+
+**Flash comparison***
+
+| Сompression |    ONNX    |   Keras   |  TF Lite  | TF Lite (Quant) |
+| :---------- | :--------: | :-------: | :-------: | :-------------: |
+| None        |  1.04 MB   |  1.04 MB  |  1.04 MB  |    267.76 KB    |
+| x4          | WARNING*** | 682.66 KB | 682.66 KB |  Not supported  |
+| x8          | WARNING*** | 617.73 KB | 617.73 KB |  Not supported  |
+
+**RAM comparison***
+
+| Сompression |    ONNX    |   Keras   |  TF Lite  | TF Lite (Quant) |
+| ----------- | :--------: | :-------: | :-------: | :-------------: |
+| None        | 148.41 KB  | 148.41 KB | 148.41 KB |    43.63 KB     |
+| x4          | WARNING*** | 148.41 KB | 148.41 KB |  Not supported  |
+| x8          | WARNING*** | 148.41 KB | 148.41 KB |  Not supported  |
+
+**Time comparison***
+
+| Сompression |    ONNX    |   Keras    |  TF Lite   | TF Lite (Quant) |
+| ----------- | :--------: | :--------: | :--------: | :-------------: |
+| None        | 285.562 ms | 285.169 ms | 285.171 ms |   106.633 ms    |
+| x4          | WARNING*** | 285.120 ms | 285.133 ms |  Not supported  |
+| x8          | WARNING*** | 285.040 ms | 285.048 ms |  Not supported  |
+
+**Accuracy comparison***
+
+| Сompression |      ONNX       |      Keras      |     TF Lite     | TF Lite (Quant) |
+| ----------- | :-------------: | :-------------: | :-------------: | :-------------: |
+| None        | 83.0% (83.0%)** | 82.5% (82.5%)** | 82.5% (82.5%)** | 81.5% (81.5%)** |
+| x4          |   WARNING***    | 82.5% (82.5%)** | 82.5% (82.5%)** |  Not supported  |
+| x8          |   WARNING***    | 82.5% (82.5%)** | 82.5% (82.5%)** |  Not supported  |
+
+*Во всех вариантах использовались одинаковые граф вычислений и дадасет для валидации. **Веса моделей различны**;
+
+**Validation on target (Validation on desktop);
+
+***X-CUBE-AI выдает предупреждение (WARNING: no weight was compressed) из-за GeMM оптимизации.
+
+[Видео демонстрации работы](https://www.youtube.com/watch?v=fylVEovoXl0) ![youtube](https://img.shields.io/youtube/views/fylVEovoXl0?style=social).
 
 ## Copyright
 

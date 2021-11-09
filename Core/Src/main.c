@@ -205,8 +205,8 @@ int main(void)
 		  DCMI_State = BUSY;
 		  ILI9163_render((uint16_t *)spi_buff_pointer);
 		  SPI_State = BUSY;
-		  //CIFAR_AI_block((uint16_t *)ai_buff_pointer);
-		  MNIST_AI_block((uint16_t *)ai_buff_pointer);
+		  CIFAR_AI_block((uint16_t *)ai_buff_pointer);
+		  //MNIST_AI_block((uint16_t *)ai_buff_pointer);
 		  //FaceDetect_AI_block((uint16_t *)ai_buff_pointer);
 		  fps_counter++;
 		  order++;

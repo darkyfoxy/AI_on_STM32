@@ -4,7 +4,7 @@
   * @brief      This file provides functions to testing computer vision on STM32
 
   * @author     darkyfoxy [*GitHub*](https://github.com/darkyfoxy)
-  * @version    0.01
+  * @version    0.02
   * @date       08.11.2021
   *
   ******************************************************************************
@@ -55,7 +55,11 @@ static const char lable[10][11] = {"airplane",
 extern uint8_t fps;
 
 /* Private function prototypes -----------------------------------------------*/
+#ifndef QUANT
 static uint8_t CIFAR_Ai_calculate(uint16_t *frameBuffer);
+#else
+static uint8_t Q_CIFAR_Ai_calculate(uint16_t *frameBuffer);
+#endif
 
 #ifndef QUANT
 static uint8_t MNIST_Ai_calculate(uint16_t *frameBuffer);
@@ -67,8 +71,9 @@ static void Non_HAL_CON_UInt_to_DecString_8bit(uint8_t data, uint8_t *decstr, ui
 
 /* Private functions ---------------------------------------------------------*/
 
+#ifndef QUANT
 /**
-  * @brief  The function to preparing data for the CIFAR network with quantization,
+  * @brief  The function to preparing data for the CIFAR network without quantization,
   * 		starting the network and calculating a maximum element of a network output
   * @param  frameBuffer a pointer on a frame buffer with RGB565 values (size 128*128)
   * @retval res a uint8_t value with a number of a max item in a network output
@@ -99,7 +104,7 @@ static uint8_t CIFAR_Ai_calculate(uint16_t *frameBuffer)
 	my_ai_run((void *)input, (void *)output);
 	SCB_DisableDCache();
 
-	uint8_t res=0;
+	uint8_t res = 0;
 	float max = output[0];
 
 	for(int g = 1; g < 10; g++)
@@ -112,6 +117,56 @@ static uint8_t CIFAR_Ai_calculate(uint16_t *frameBuffer)
 	}
 	return res;
 }
+#endif
+
+#ifdef QUANT
+/**
+  * @brief  The function to preparing data for the CIFAR network with quantization,
+  * 		starting the network and calculating a maximum element of a network output
+  * @note	See computer_vision.h for a definition of GUI
+  * @param  frameBuffer a pointer on a frame buffer with RGB565 values (size 128*128)
+  * @retval res a uint8_t value with a number of a max item in a network output
+  */
+static uint8_t Q_CIFAR_Ai_calculate(uint16_t *frameBuffer)
+{
+	int8_t input[32][32][3];
+	int8_t output[10];
+
+	for(int i = 0; i < 32; i ++)
+	{
+		for(int j = 0; j < 32; j ++)
+		{
+			uint16_t RGB_sample = frameBuffer[(128*32) + 32 + (i*128*2) + (j*2)];
+			float B = (float)(RGB_sample & 0x1f) / 32.0;
+			float G = (float)((RGB_sample >> 6) & 0x1f) / 32.0;
+			float R = (float)(RGB_sample >> 11) / 32.0;
+
+			input[i][j][0] = (int8_t)((R - 0.5) * 255);
+			input[i][j][1] = (int8_t)((G - 0.5) * 255);
+			input[i][j][2] = (int8_t)((B - 0.5) * 255);
+		}
+	}
+
+
+
+	SCB_EnableDCache();
+	my_ai_run((void *)input, (void *)output);
+	SCB_DisableDCache();
+
+	uint8_t res = 0;
+	int8_t max = output[0];
+
+	for(int g = 1; g < 10; g++)
+	{
+		if(max < output[g])
+		{
+			res = g;
+			max = output[g];
+		}
+	}
+	return res;
+}
+#endif
 
 #ifndef QUANT
 /**
@@ -152,7 +207,7 @@ static uint8_t MNIST_Ai_calculate(uint16_t *frameBuffer)
 	my_ai_run((void *)input, (void *)output);
 	SCB_DisableDCache();
 
-	uint8_t res=0;
+	uint8_t res = 0;
 	float max = output[0];
 
 	for(int g = 1; g < 10; g++)
@@ -308,7 +363,11 @@ void CIFAR_AI_block(uint16_t *imag_trans)
   ILI9163_drawRect(imag_trans, 30, 30, 98, 98,  2,  0x1f<<11);
 #endif
 
+#ifndef QUANT
   uint8_t number = CIFAR_Ai_calculate(imag_trans);
+#else
+  uint8_t number = Q_CIFAR_Ai_calculate(imag_trans);
+#endif
 
 #if defined GUI
   ILI9163_fillRect(imag_trans, 60, 0, 128, 20, 0xffff);
