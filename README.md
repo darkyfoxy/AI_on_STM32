@@ -180,7 +180,7 @@ converter.inference_output_type = tf.int8
 
 С помощью генератора кода STM32CubeMX и расширения X-CUBE-AI нейронная сеть была реализована на микроконтроллер STM32H743.
 
-![](.\img\mobilenet.gif)
+![mobilenet](https://user-images.githubusercontent.com/51966677/141657573-5a16f8b9-82da-4aa7-bdc3-39f5a8d0d55c.gif)
 
 ---
 
