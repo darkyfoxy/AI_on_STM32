@@ -86,9 +86,9 @@ converter.inference_output_type = tf.int8
 | x4          | 91.5% (91.5%)** | 93.9% (93.9%)** | 93.9% (93.9%)** |  Not supported  |
 | x8          | 91.7% (91.7%)** | 93.8% (93.8%)** | 93.8% (93.8%)** |  Not supported  |
 
-*****Во всех вариантах использовались одинаковые граф вычислений и дадасет для валидации. **Веса моделей различны**;
+*Во всех вариантах использовались одинаковые граф вычислений и дадасет для валидации. **Веса моделей различны**;
 
-******Validation on target (Validation on desktop).
+**Validation on target (Validation on desktop).
 
 Из [документации от STMicroelectronics](https://www.st.com/resource/en/user_manual/dm00570145-getting-started-with-xcubeai-expansion-package-for-artificial-intelligence-ai-stmicroelectronics.pdf) (п. 6.1) компрессия размера весов и смещений основана на методе [k-средних](https://ru.wikipedia.org/wiki/Метод_k-средних) и применима только к полносвязным слоям.
 
@@ -163,11 +163,11 @@ converter.inference_output_type = tf.int8
 | x4          |   WARNING***    | 82.5% (82.5%)** | 82.5% (82.5%)** |  Not supported  |
 | x8          |   WARNING***    | 82.5% (82.5%)** | 82.5% (82.5%)** |  Not supported  |
 
-*****Во всех вариантах использовались одинаковые граф вычислений и дадасет для валидации. **Веса моделей различны**;
+*Во всех вариантах использовались одинаковые граф вычислений и дадасет для валидации. **Веса моделей различны**;
 
-******Validation on target (Validation on desktop);
+**Validation on target (Validation on desktop);
 
-**\*\*\***X-CUBE-AI выдает предупреждение (WARNING: no weight was compressed) из-за GeMM оптимизации.
+***X-CUBE-AI выдает предупреждение (WARNING: no weight was compressed) из-за GeMM оптимизации.
 
 [Видео демонстрации работы](https://www.youtube.com/watch?v=fylVEovoXl0) ![youtube](https://img.shields.io/youtube/views/fylVEovoXl0?style=social).
 
@@ -197,9 +197,9 @@ converter.inference_output_type = tf.int8
 | mobilenet_v1_0.50_192_quant |  1.28 MB  |  401.60 KB  |   334.688 ms   | 59.9%  | 82.1%  |
 | mobilenet_v1_0.50_224_quant |  1.28 MB  | 545.35 KB** |       --       | 61.2%  | 83.2%  |
 
-*****From [TensorFlow site](https://www.tensorflow.org/lite/guide/hosted_models).
+*From [TensorFlow site](https://www.tensorflow.org/lite/guide/hosted_models).
 
-******region RAM_D1 overflowed
+**region RAM_D1 overflowed
 
 
 ## Copyright
