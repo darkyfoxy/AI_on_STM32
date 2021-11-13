@@ -1,5 +1,6 @@
 Debug/
 Release/
+network_MobileNet/*.tflite
 
 AI_on_STM32 Debug.launch
 

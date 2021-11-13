@@ -862,8 +862,8 @@ static int sensor_snapshot(DCMI_HandleTypeDef DCMIHandle, int32_t *image)
 {
 	#if defined RGB565_128X128
 	HAL_DCMI_Start_DMA(&DCMIHandle, DCMI_MODE_SNAPSHOT, (uint32_t) image, RGB565_128X128_BUF_SIZE/4);
-	#elif defined RGB565_QQVGA
-	HAL_DCMI_Start_DMA(&DCMIHandle, DCMI_MODE_SNAPSHOT, (uint32_t) image, RGB565_QQVGA_BUF_SIZE/4);
+	#elif defined RGB565_160X160
+	HAL_DCMI_Start_DMA(&DCMIHandle, DCMI_MODE_SNAPSHOT, (uint32_t) image, RGB565_160X160_BUF_SIZE/4);
 	#elif defined RGB565_QVGA
 	HAL_DCMI_Start_DMA(&DCMIHandle, DCMI_MODE_SNAPSHOT, (uint32_t) image, RGB565_QVGA_BUF_SIZE/4);
 	#elif defined RGB565_VGA

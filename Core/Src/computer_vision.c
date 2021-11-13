@@ -35,11 +35,13 @@
 #include "stm32h7xx_hal.h"
 #include "app_x-cube-ai.h"
 #include "ili9163.h"
+#include "imagnet_lables.h"
+
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-static uint8_t fps_buf[4];
+static uint8_t string_buf[11];
 
 static const char lable[10][11] = {"airplane",
 								   "automobile",
@@ -67,7 +69,10 @@ static uint8_t MNIST_Ai_calculate(uint16_t *frameBuffer);
 static uint8_t Q_MNIST_Ai_calculate(uint16_t *frameBuffer);
 #endif
 
+static void MobileNet_Ai_calculate(uint16_t *frameBuffer, uint16_t *lables);
+
 static void Non_HAL_CON_UInt_to_DecString_8bit(uint8_t data, uint8_t *decstr, uint8_t sizebuf);
+
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -278,6 +283,68 @@ static uint8_t Q_MNIST_Ai_calculate(uint16_t *frameBuffer)
 #endif
 
 /**
+  * @brief  The function to preparing data for the MobileNet network with quantization,
+  * 		starting the network and calculating a maximum element of a network output
+  * @param  frameBuffer a pointer on a frame buffer with RGB565 values (size 128*128)
+  * @retval res a uint16_t value with a number of a max item in a network output
+  */
+static void MobileNet_Ai_calculate(uint16_t *frameBuffer, uint16_t *lables)
+{
+	uint8_t input[128][128][3];
+	uint8_t output[1001];
+
+	for(int i = 0; i < 128; i ++)
+	{
+		for(int j = 0; j < 128; j ++)
+		{
+			uint16_t RGB_sample = frameBuffer[(i*128) + j];
+			float B = (float)(RGB_sample & 0x1f) / 32.0;
+			float G = (float)((RGB_sample >> 6) & 0x1f) / 32.0;
+			float R = (float)(RGB_sample >> 11) / 32.0;
+
+			input[i][j][0] = (uint8_t)(R * 255);
+			input[i][j][1] = (uint8_t)(G * 255);
+			input[i][j][2] = (uint8_t)(B * 255);
+		}
+	}
+
+	SCB_EnableDCache();
+	my_ai_run((void *)input, (void *)output);
+	SCB_DisableDCache();
+
+	uint16_t max[5] = {0};
+
+	for(int i = 0; i < 1001; i++)
+	{
+		for(int n = 4; n >= 0; n--)
+		{
+			if(output[i] > max[n])
+			{
+			if(n != 0)
+			{
+				uint16_t t_max = max[n];
+				uint16_t t_lable = lables[n];
+				for(int g = n-1; g >= 0; g--)
+				{
+					uint16_t temp = lables[g];
+					lables[g] = t_lable;
+					t_lable = temp;
+
+					temp = max[g];
+					max[g] = t_max;
+					t_max = temp;
+				}
+
+			}
+			max[n] = output[i];
+			lables[n] = i;
+			break;
+			}
+		}
+	}
+}
+
+/**
   * @brief  The function to convert an uint8_t value to a character string
   *         with decimal symbols (from 0 to 9)
   * @param  data an uint8_t value to convert to a character string
@@ -299,6 +366,7 @@ static void Non_HAL_CON_UInt_to_DecString_8bit(uint8_t data, uint8_t *decstr, ui
     }
     *decstr = 0;
 }
+
 
 
 /* Exported functions --------------------------------------------------------*/
@@ -340,12 +408,12 @@ void MNIST_AI_block(uint16_t *imag_trans)
   ILI9163_drawChar(imag_trans, 99, 1, ':', Font_11x18, 0x0);
 
 
-  Non_HAL_CON_UInt_to_DecString_8bit(fps, fps_buf, sizeof(fps_buf));
+  Non_HAL_CON_UInt_to_DecString_8bit(fps, string_buf, sizeof(string_buf));
   for(int i = 0; i < 3; i++)
   {
-	  if(fps_buf[i] != 0x0)
+	  if(string_buf[i] != 0x0)
 	  {
-		  ILI9163_drawChar(imag_trans, 105 + (i*11), 1, fps_buf[i], Font_11x18, 0x0);
+		  ILI9163_drawChar(imag_trans, 105 + (i*11), 1, string_buf[i], Font_11x18, 0x0);
 	  }
   }
  #endif
@@ -370,30 +438,76 @@ void CIFAR_AI_block(uint16_t *imag_trans)
 #endif
 
 #if defined GUI
-  ILI9163_fillRect(imag_trans, 60, 0, 128, 20, 0xffff);
+  ILI9163_fillRect(imag_trans, 70, 0, 128, 20, 0xffff);
   ILI9163_fillRect(imag_trans, 0, 128-20, 128, 128, 0xffff);
 
 
-  ILI9163_drawChar(imag_trans, 93 - (3*11) + 10, 1, 'f', Font_11x18, 0x0);
-  ILI9163_drawChar(imag_trans, 93 - (2*11) + 10, 1, 'p', Font_11x18, 0x0);
-  ILI9163_drawChar(imag_trans, 93 - (1*11) + 10, 1, 's', Font_11x18, 0x0);
-  ILI9163_drawChar(imag_trans, 89 + 10, 1, ':', Font_11x18, 0x0);
+  ILI9163_drawChar(imag_trans, 103 - (3*11), 1, 'f', Font_11x18, 0x0);
+  ILI9163_drawChar(imag_trans, 103 - (2*11), 1, 'p', Font_11x18, 0x0);
+  ILI9163_drawChar(imag_trans, 103 - (1*11), 1, 's', Font_11x18, 0x0);
+  ILI9163_drawChar(imag_trans, 99, 1, ':', Font_11x18, 0x0);
 
   for(int i = 0; lable[number][i] != 0; i++)
   {
 	  ILI9163_drawChar(imag_trans, 1 + (i*11), 109, lable[number][i], Font_11x18, 0x0);
   }
 
-  ILI9163_drawChar(imag_trans, 128-8, 109, number+0x30, Font_7x10, 0x0);
+  ILI9163_drawChar(imag_trans, 120, 109, number+0x30, Font_7x10, 0x0);
 
-
-  Non_HAL_CON_UInt_to_DecString_8bit(fps, fps_buf, sizeof(fps_buf));
-  for(int i = 0; i < 3; i++)
+  Non_HAL_CON_UInt_to_DecString_8bit(fps, string_buf, sizeof(string_buf));
+  for(int i = 0; string_buf[i] != 0x0; i++)
   {
-	  if(fps_buf[i] != 0x0)
+	ILI9163_drawChar(imag_trans, 105 + (i*11), 1, string_buf[i], Font_11x18, 0x0);
+  }
+#endif
+}
+
+/**
+  * @brief  The function to MobileNet network computing and GUI rendering
+  * @note	See computer_vision.h for a definition of GUI.
+  * @param  imag_trans a pointer on a frame buffer with RGB565 values (size 128*128)
+  * @retval void
+  */
+void MobileNet_AI_block(uint16_t *imag_trans)
+{
+
+  uint16_t top_clas[5] = {0};
+  MobileNet_Ai_calculate(imag_trans, top_clas);
+
+  uint16_t number;
+
+#if defined GUI
+  ILI9163_fillRect(imag_trans, 91, 0, 128, 12, 0xffff);
+
+
+  ILI9163_drawChar(imag_trans, 112 - (3*7), 1, 'f', Font_7x10, 0x0);
+  ILI9163_drawChar(imag_trans, 112 - (2*7), 1, 'p', Font_7x10, 0x0);
+  ILI9163_drawChar(imag_trans, 112 - (1*7), 1, 's', Font_7x10, 0x0);
+  ILI9163_drawChar(imag_trans, 109, 1, ':', Font_7x10, 0x0);
+
+  for(int x = 0; x < 128; x++)
+  {
+	  for(int y = 0; y < 50; y++)
 	  {
-		  ILI9163_drawChar(imag_trans, 95 + (i*11) + 10, 1, fps_buf[i], Font_11x18, 0x0);
+		  imag_trans[128*78 + x + y*128] = imag_trans[128*78 + x + y*128] | 0b1100011000011000;
 	  }
+  }
+
+  for(int m = 0; m <= 4; m++)
+  {
+	  number = top_clas[m];
+	  ILI9163_drawChar(imag_trans, 0, 118 - (m*10), 0x35 - m, Font_7x10, 0x00);
+	  for(int i = 0; mobilenet_lables[number][i] != 0; i++)
+	  {
+
+		  ILI9163_drawChar(imag_trans, 7 + (i*7), 118 - (m*10), mobilenet_lables[number][i], Font_7x10, 0x00);
+	  }
+  }
+
+  Non_HAL_CON_UInt_to_DecString_8bit(fps, string_buf, sizeof(string_buf));
+  for(int i = 0; string_buf[i] != 0; i++)
+  {
+	  ILI9163_drawChar(imag_trans, 113 + (i*7), 1, string_buf[i], Font_7x10, 0x0);
   }
 #endif
 }

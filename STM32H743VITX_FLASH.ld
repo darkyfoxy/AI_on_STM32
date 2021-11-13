@@ -80,10 +80,10 @@ SECTIONS
     _etext = .;        /* define a global symbols at end of code */
   } >FLASH
   
-  .dma_buffer :
+  .frame_buffer :
   {
   	. = ALIGN(4);
-    *(.dma_buffer)
+    *(.frame_buffer)
     . = ALIGN(4);
   } >RAM_D2
 

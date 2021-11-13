@@ -66,6 +66,7 @@ UART_HandleTypeDef huart3;
 sensor_t sensor = {0};
 int ret;
 
+uint8_t fps_buf[11];
 Streem_State_t SPI_State;
 Streem_State_t DCMI_State;
 
@@ -74,11 +75,13 @@ uint8_t fps = 0;
 
 //defined in sensor.h
 #if defined RGB565_128X128
-int8_t imag_b0[RGB565_128X128_BUF_SIZE] = {0};
-int8_t imag_b1[RGB565_128X128_BUF_SIZE] = {0};
-int8_t imag_b2[RGB565_128X128_BUF_SIZE] = {0};
-#elif defined RGB565_QQVGA
-int8_t imag[RGB565_QQVGA_BUF_SIZE] = {0};
+__attribute__((section(".frame_buffer")))int8_t imag_b0[RGB565_128X128_BUF_SIZE] = {0};
+__attribute__((section(".frame_buffer")))int8_t imag_b1[RGB565_128X128_BUF_SIZE] = {0};
+__attribute__((section(".frame_buffer")))int8_t imag_b2[RGB565_128X128_BUF_SIZE] = {0};
+#elif defined RGB565_160X160
+__attribute__((section(".frame_buffer")))int8_t imag_b0[RGB565_160X160_BUF_SIZE] = {0};
+__attribute__((section(".frame_buffer")))int8_t imag_b1[RGB565_160X160_BUF_SIZE] = {0};
+__attribute__((section(".frame_buffer")))int8_t imag_b2[RGB565_160X160_BUF_SIZE] = {0};
 #elif defined RGB565_QVGA
 int8_t imag[RGB565_QVGA_BUF_SIZE] = {0};
 #elif defined RGB565_VGA
@@ -101,7 +104,6 @@ static void MX_TIM6_Init(void);
 /* USER CODE BEGIN PFP */
 static void sensor_setting(I2C_HandleTypeDef *camera_i2c1);
 
-//static void UART_Transmit();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -203,11 +205,16 @@ int main(void)
 
 		  sensor.snapshot(hdcmi, (int32_t *)hdmi_buff_pointer);
 		  DCMI_State = BUSY;
+
 		  ILI9163_render((uint16_t *)spi_buff_pointer);
 		  SPI_State = BUSY;
-		  CIFAR_AI_block((uint16_t *)ai_buff_pointer);
+
 		  //MNIST_AI_block((uint16_t *)ai_buff_pointer);
-		  //FaceDetect_AI_block((uint16_t *)ai_buff_pointer);
+		  //CIFAR_AI_block((uint16_t *)ai_buff_pointer);
+		  MobileNet_AI_block((uint16_t *)ai_buff_pointer);
+
+		  while(HAL_GPIO_ReadPin(K1_GPIO_Port, K1_Pin) == GPIO_PIN_RESET){}
+
 		  fps_counter++;
 		  order++;
 	  }
@@ -624,6 +631,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : K1_Pin */
+  GPIO_InitStruct.Pin = K1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(K1_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pin : PWDN2_Pin */
   GPIO_InitStruct.Pin = PWDN2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -666,8 +679,8 @@ static void sensor_setting(I2C_HandleTypeDef *camera_i2c1)
 	  sensor.pixformat = PIXFORMAT_RGB565;
 	#if defined RGB565_128X128
 	  sensor.framesize = FRAMESIZE_128X128;
-	#elif defined RGB565_QQVGA
-	  sensor.framesize = FRAMESIZE_QQVGA;
+	#elif defined RGB565_160X160
+	  sensor.framesize = FRAMESIZE_160X160;
 	#elif defined RGB565_QVGA
 	sensor.framesize = FRAMESIZE_QVGA;
 	#elif defined RGB565_VGA

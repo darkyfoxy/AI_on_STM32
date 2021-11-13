@@ -43,7 +43,7 @@
 //You need to define a GUI definition to render the GUI.
 #define GUI
 //You need to define a QUANT definition to use TFLite with quantization.
-//#define QUANT
+#define QUANT
 
 /* Private types -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -56,5 +56,6 @@
 /* Exported functions prototypes ---------------------------------------------*/
 void MNIST_AI_block(uint16_t *imag_trans);
 void CIFAR_AI_block(uint16_t *imag_trans);
+void MobileNet_AI_block(uint16_t *imag_trans);
 
 #endif /* INC_COMPUTER_VISION_H_ */

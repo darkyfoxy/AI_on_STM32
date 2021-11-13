@@ -39,7 +39,18 @@ Neural network implementation on STM32 with Cube-AI.
 
 **TensorFlow Lite**
 
-Нейронная сеть была обучена с помощью TensorFlow на датасетe MNIST. После этого сохранена в формате **TF Lite** без квантования и с квантованием весов до *int8* (**TF Lite (Quant)**).
+Нейронная сеть была обучена с помощью TensorFlow на датасетe MNIST.
+
+После этого сохранена в формате **TF Lite** без квантования и с квантованием весов до *int8* (**TF Lite (Quant)**).
+
+Конфигурация квантования:
+
+```python
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
+converter.inference_input_type = tf.int8
+converter.inference_output_type = tf.int8
+```
 
 ---
 
@@ -59,7 +70,7 @@ Neural network implementation on STM32 with Cube-AI.
 | x4          | 4.66 KB | 4.66 KB | 4.66 KB |  Not supported  |
 | x8          | 4.66 KB | 4.66 KB | 4.66 KB |  Not supported  |
 
-**Time comparison***
+**Time on target comparison***
 
 | Сompression |   ONNX   |  Keras   | TF Lite  | TF Lite (Quant) |
 | ----------- | :------: | :------: | :------: | :-------------: |
@@ -75,9 +86,9 @@ Neural network implementation on STM32 with Cube-AI.
 | x4          | 91.5% (91.5%)** | 93.9% (93.9%)** | 93.9% (93.9%)** |  Not supported  |
 | x8          | 91.7% (91.7%)** | 93.8% (93.8%)** | 93.8% (93.8%)** |  Not supported  |
 
-*Во всех вариантах использовались одинаковые граф вычислений и дадасет для валидации. **Веса моделей различны**;
+*****Во всех вариантах использовались одинаковые граф вычислений и дадасет для валидации. **Веса моделей различны**;
 
-**Validation on target (Validation on desktop).
+******Validation on target (Validation on desktop).
 
 Из [документации от STMicroelectronics](https://www.st.com/resource/en/user_manual/dm00570145-getting-started-with-xcubeai-expansion-package-for-artificial-intelligence-ai-stmicroelectronics.pdf) (п. 6.1) компрессия размера весов и смещений основана на методе [k-средних](https://ru.wikipedia.org/wiki/Метод_k-средних) и применима только к полносвязным слоям.
 
@@ -108,6 +119,16 @@ PyTorch экспортирует модель в ONNX таким образом,
 
 Нейронная сеть была обучена с помощью TensorFlow на датасетe CIFAR10. После этого сохранена в формате **TF Lite** без квантования и с квантованием весов до *int8* (**TF Lite (Quant)**).
 
+Конфигурация квантования:
+
+```python
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
+converter.inference_input_type = tf.int8
+converter.inference_output_type = tf.int8
+```
+
+
 ---
 
 **Flash comparison***
@@ -126,7 +147,7 @@ PyTorch экспортирует модель в ONNX таким образом,
 | x4          | WARNING*** | 148.41 KB | 148.41 KB |  Not supported  |
 | x8          | WARNING*** | 148.41 KB | 148.41 KB |  Not supported  |
 
-**Time comparison***
+**Time on target comparison***
 
 | Сompression |    ONNX    |   Keras    |  TF Lite   | TF Lite (Quant) |
 | ----------- | :--------: | :--------: | :--------: | :-------------: |
@@ -142,13 +163,44 @@ PyTorch экспортирует модель в ONNX таким образом,
 | x4          |   WARNING***    | 82.5% (82.5%)** | 82.5% (82.5%)** |  Not supported  |
 | x8          |   WARNING***    | 82.5% (82.5%)** | 82.5% (82.5%)** |  Not supported  |
 
-*Во всех вариантах использовались одинаковые граф вычислений и дадасет для валидации. **Веса моделей различны**;
+*****Во всех вариантах использовались одинаковые граф вычислений и дадасет для валидации. **Веса моделей различны**;
 
-**Validation on target (Validation on desktop);
+******Validation on target (Validation on desktop);
 
-***X-CUBE-AI выдает предупреждение (WARNING: no weight was compressed) из-за GeMM оптимизации.
+**\*\*\***X-CUBE-AI выдает предупреждение (WARNING: no weight was compressed) из-за GeMM оптимизации.
 
 [Видео демонстрации работы](https://www.youtube.com/watch?v=fylVEovoXl0) ![youtube](https://img.shields.io/youtube/views/fylVEovoXl0?style=social).
+
+## Example with MobileNet
+
+Демонстрация работы нейронной сети для распознавания образов на микроконтроллере STM32H743.
+Классификация производиться на [1001 класс](./network_MobileNet/imagnet_lables.txt).
+
+Нейронные сети доступны на сайте [TensorFlow](https://www.tensorflow.org/lite/guide/hosted_models) или на [TensorFlow Hub](https://tfhub.dev) или на [GitHub](https://github.com/tensorflow/models/blob/master/research/slim/nets/mobilenet_v1.md).
+
+С помощью генератора кода STM32CubeMX и расширения X-CUBE-AI нейронная сеть была реализована на микроконтроллер STM32H743.
+
+![](.\img\mobilenet.gif)
+
+---
+
+**Model comparison**
+
+| Name                        |   Flash   |     RAM     | Time on target | Top-1* | Top-5* |
+| --------------------------- | :-------: | :---------: | :------------: | :----: | :----: |
+| mobilenet_v1_0.25_128_quant | 467.58 KB |  114.54 KB  |   57.410 ms    | 39.5%  | 64.4%  |
+| mobilenet_v1_0.25_160_quant | 467.58 KB |  177.92 KB  |   89.128 ms    | 42.8%  | 68.1%  |
+| mobilenet_v1_0.25_192_quant | 467.58 KB |  255.29 KB  |   127.995 ms   | 45.7%  | 70.8%  |
+| mobilenet_v1_0.25_224_quant | 467.58 KB |  346.67 KB  |   175.739 ms   | 48.2%  | 72.8%  |
+| mobilenet_v1_0.50_128_quant |  1.28 MB  |  180.10 KB  |   153.405 ms   | 54.9%  | 78.1%  |
+| mobilenet_v1_0.50_160_quant |  1.28 MB  |  279.85 KB  |   242.991 ms   | 57.2%  | 80.5%  |
+| mobilenet_v1_0.50_192_quant |  1.28 MB  |  401.60 KB  |   334.688 ms   | 59.9%  | 82.1%  |
+| mobilenet_v1_0.50_224_quant |  1.28 MB  | 545.35 KB** |       --       | 61.2%  | 83.2%  |
+
+*****From [TensorFlow site](https://www.tensorflow.org/lite/guide/hosted_models).
+
+******region RAM_D1 overflowed
+
 
 ## Copyright
 
