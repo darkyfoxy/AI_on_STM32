@@ -1,7 +1,19 @@
+
+
 # AI on STM32
+
 Neural network implementation on STM32 with Cube-AI.
 
 Проект для демонстрации работы нейронных сетей на микроконтроллерах STM32.
+
+[Hardware](https://github.com/darkyfoxy/AI_on_STM32#hardware)
+[STMicroelectronics.X-CUBE-AI](https://github.com/darkyfoxy/AI_on_STM32#stmicroelectronicsx-cube-ai)
+[Example with MNIST Dataset](https://github.com/darkyfoxy/AI_on_STM32#example-with-mnist-dataset)
+[Example with CIFAR10 Dataset](https://github.com/darkyfoxy/AI_on_STM32#example-with-cifar10-dataset)
+[Example with CIFAR100 SuperClasses Dataset](https://github.com/darkyfoxy/AI_on_STM32#example-with-cifar100-superclasses-dataset)
+	
+[Example with MobileNet](https://github.com/darkyfoxy/AI_on_STM32#example-with-mobilenet)
+[Copyright](https://github.com/darkyfoxy/AI_on_STM32#copyright)
 
 ## Hardware
 
@@ -50,6 +62,7 @@ converter.optimizations = [tf.lite.Optimize.DEFAULT]
 converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
 converter.inference_input_type = tf.int8
 converter.inference_output_type = tf.int8
+converter.representative_dataset = representative_dataset
 ```
 
 ---
@@ -126,6 +139,7 @@ converter.optimizations = [tf.lite.Optimize.DEFAULT]
 converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
 converter.inference_input_type = tf.int8
 converter.inference_output_type = tf.int8
+converter.representative_dataset = representative_dataset
 ```
 
 
@@ -171,6 +185,248 @@ converter.inference_output_type = tf.int8
 
 [Видео демонстрации работы](https://www.youtube.com/watch?v=fylVEovoXl0) ![youtube](https://img.shields.io/youtube/views/fylVEovoXl0?style=social).
 
+## Example with CIFAR100 SuperClasses Dataset
+
+Демонстрация работы нейронной сети для распознавания образов на микроконтроллере STM32H743.
+Классификация производиться на 20 супер-классов:
+0 - aquatic mammals;
+1 - fish;
+2 - flowers;
+3 - food containers;
+4 - fruit and vegetables;
+5 - household electrical devices;
+6 - household furniture;
+7 - insects;
+8 - large carnivores;
+9 - large man-made outdoor things;
+10 - large natural outdoor scenes;
+11 - large omnivores and herbivores;
+12 - medium-sized mammals;
+13 - non-insect invertebrates;
+14 - people;
+15 - reptiles;
+16 - small mammals;
+17 - trees;
+18 - vehicles 1;
+19 - vehicles 2.
+
+Код для обучения нейронной сети, нейронная сеть и выборки для валидации доступны в [репозитории](https://github.com/darkyfoxy/AI_on_STM32/tree/main/network_CIFAR100).
+
+С помощью генератора кода STM32CubeMX и расширения X-CUBE-AI нейронная сеть была реализована на микроконтроллер STM32H743.
+
+Нейронная сеть была обучена с помощью TensorFlow на датасетe CIFAR100.
+
+### Optimization method
+
+#### TensorFlow Lite without optimization
+
+Нейронная сеть сохранена в формате TFLite без каких-либо оптимизаций.
+
+```python
+converter = tf.lite.TFLiteConverter.from_saved_model(network_dir_path)
+model_no_quant_tflite = converter.convert()
+
+open("network_without_optim.tflite", "wb").write(model_no_quant_tflite)
+```
+
+#### TensorFlow Lite with Cube-AI compression (x4/x8)
+
+Нейронная сеть сохранена в формате TFLite без каких-либо оптимизаций. После этого в среде CubeMX применена компрессия весов посносвязных слоёв на основе метода k-средних.
+
+#### Quantization
+
+Квантованные модели - это модели, в которых мы используем параметры с более низкой точностью, такие как 8-битные целые числа вместо от 32-битных чисел с плавающей точкой.
+
+![](img\Q.png)
+
+*Изображение переведено с сайта [TensorFlow](https://www.tensorflow.org/lite/performance/model_optimization).
+
+**TensorFlow Lite with рost-training quantization**
+
+Квантование после обучения - это метод преобразования, который может уменьшить размер модели, а также уменьшить время выполнения. При этом точности модели незначительно уменьшается.
+
+![](img\PTQ.png)
+
+*Изображение переведено с сайта [TensorFlow](https://www.tensorflow.org/lite/performance/post_training_quantization).
+
+***Dynamic range quantization (DRQ)***
+
+```python
+converter = tf.lite.TFLiteConverter.from_saved_model(network_dir_path)
+
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+model_tflite = converter.convert()
+
+open("network_DRQ.tflite", "wb").write(model_tflite)
+```
+
+Cube-AI:
+
+```
+WARNING: Hybrid layer dense_55 not supported. - Mapping on float version
+...
+TOOL ERROR: Didn't find op for builtin opcode 'CONV_2D' version '5'
+```
+
+***Full integer quantization (FIQ)***
+
+```python
+converter = tf.lite.TFLiteConverter.from_saved_model(network_dir_path)
+
+def representative_dataset():
+  for i in range(500):
+    yield([test_images[i].reshape(1, 32, 32, 3).astype(np.float32)])
+
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+converter.representative_dataset = representative_dataset
+model_tflite = converter.convert()
+
+open("network_FIQ.tflite", "wb").write(model_tflite)
+```
+
+***Integer only: 16-bit activations with 8-bit weights (INT16_INT8)***
+
+```python
+converter = tf.lite.TFLiteConverter.from_saved_model(network_dir_path)
+
+def representative_dataset():
+  for i in range(500):
+    yield([test_images[i].reshape(1, 32, 32, 3).astype(np.float32)])
+
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+converter.representative_dataset = representative_dataset
+converter.target_spec.supported_ops = [tf.lite.OpsSet.EXPERIMENTAL_TFLITE_BUILTINS_ACTIVATIONS_INT16_WEIGHTS_INT8]
+model_tflite = converter.convert()
+
+open("network_INT16_INT8.tflite", "wb").write(model_tflite)
+```
+
+Cube-AI:
+
+```
+NOT IMPLEMENTED: Unexpected numpy.dtype: int64 (dict_keys(['uint8', 'int8', 'uint16', 'int16', 'uint32', 'int32', 'float32', 'bool']))
+```
+
+***Integer only: 16-bit activations with 8-bit weights with BUILTINS (INT16_INT8_BUILTINS)***
+
+```python
+converter = tf.lite.TFLiteConverter.from_saved_model(network_dir_path)
+
+def representative_dataset():
+  for i in range(500):
+    yield([test_images[i].reshape(1, 32, 32, 3).astype(np.float32)])
+
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+converter.representative_dataset = representative_dataset
+converter.target_spec.supported_ops = [tf.lite.OpsSet.EXPERIMENTAL_TFLITE_BUILTINS_ACTIVATIONS_INT16_WEIGHTS_INT8,
+                                       tf.lite.OpsSet.TFLITE_BUILTINS]
+model_tflite = converter.convert()
+
+open("network_INT16_INT8_BUILTINS.tflite", "wb").write(model_tflite)
+```
+
+Cube-AI:
+
+```
+NOT IMPLEMENTED: Unexpected numpy.dtype: int64 (dict_keys(['uint8', 'int8', 'uint16', 'int16', 'uint32', 'int32', 'float32', 'bool']))
+```
+
+***Integer only: BUILTINS (BUILTINS)***
+
+```python
+converter = tf.lite.TFLiteConverter.from_saved_model(network_dir_path)
+
+def representative_dataset():
+  for i in range(500):
+    yield([test_images[i].reshape(1, 32, 32, 3).astype(np.float32)])
+
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+converter.representative_dataset = representative_dataset
+converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS]
+model_tflite = converter.convert()
+
+open("network_BUILTINS.tflite", "wb").write(model_tflite)
+```
+
+***Full integer quantization Integer only (FIQ_int_only)***
+
+```python
+converter = tf.lite.TFLiteConverter.from_saved_model(network_dir_path)
+
+def representative_dataset():
+  for i in range(500):
+    yield([test_images[i].reshape(1, 32, 32, 3).astype(np.float32)])
+
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+converter.representative_dataset = representative_dataset
+converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
+model_tflite = converter.convert()
+
+open("network_FIQ_int_only.tflite", "wb").write(model_tflite)
+```
+
+***Full integer quantization Integer only with inference input/output type (FIQ_int_only_IIOT)***
+
+```python
+converter = tf.lite.TFLiteConverter.from_saved_model(network_dir_path)
+
+def representative_dataset():
+  for i in range(500):
+    yield([test_images[i].reshape(1, 32, 32, 3).astype(np.float32)])
+
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+converter.representative_dataset = representative_dataset
+converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
+converter.inference_input_type = tf.int8
+converter.inference_output_type = tf.int8
+model_tflite = converter.convert()
+
+open("network_FIQ_int_only_IIOT.tflite", "wb").write(model_tflite)
+```
+
+***Float16 quantization (float16)***
+
+```python
+converter = tf.lite.TFLiteConverter.from_saved_model(network_dir_path)
+
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+converter.target_spec.supported_types = [tf.float16]
+model_tflite = converter.convert()
+
+open("network_float16.tflite", "wb").write(model_tflite)
+```
+
+Cube-AI:
+
+```
+INTERNAL ERROR: 'FLOAT16'
+```
+
+
+
+---
+
+### Optimization method comparison
+
+| Optimization         |   Flash   |    RAM    | Time on target |     Accuracy      |
+| :------------------- | :-------: | :-------: | :------------: | :---------------: |
+| without optimization |  1.78 MB  | 196.08 KB |   341.742 ms   | 71.67% (71.67%)** |
+| Cube-AI x4           |  1.75 MB  | 196.08 KB |   343.088 ms   | 71.67% (71.67%)** |
+| Cube-AI x8           |  1.74 MB  | 196.08 KB |   343.069 ms   | 72.67% (72.67%)** |
+| DRQ*                 |     -     |     -     |       -        |         -         |
+| FIQ                  | 458.52 KB | 59.25 KB  |   134.764 ms   | 64.00% (64.00%)** |
+| INT16_INT8*          |     -     |     -     |       -        |         -         |
+| INT16_INT8_BUILTINS* |     -     |     -     |       -        |         -         |
+| BUILTINS*            | 458.52 KB | 59.25 KB  |   134.767 ms   | 64.00% (64.00%)** |
+| FIQ_int_only         | 458.52 KB | 59.25 KB  |   134.775 ms   | 64.00% (64.00%)** |
+| FIQ_int_only_IIOT    | 458.52 KB | 49.92 KB  |   134.938 ms   | 64.00% (64.00%)** |
+| float16*             |     -     |     -     |       -        |         -         |
+|                      |           |           |                |                   |
+
+*Cube-AI ERROR;
+
+**Validation on target (Validation on desktop);
+
 ## Example with MobileNet
 
 Демонстрация работы нейронной сети для распознавания образов на микроконтроллере STM32H743.
@@ -184,7 +440,7 @@ converter.inference_output_type = tf.int8
 
 ---
 
-**Model comparison**
+#### Model comparison
 
 | Name                        |   Flash   |     RAM     | Time on target | Top-1* | Top-5* |
 | --------------------------- | :-------: | :---------: | :------------: | :----: | :----: |
