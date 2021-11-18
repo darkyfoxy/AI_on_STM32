@@ -221,7 +221,7 @@ open("network_without_optim.tflite", "wb").write(model_no_quant_tflite)
 
 Квантованные модели - это модели, в которых мы используем параметры с более низкой точностью, такие как 8-битные целые числа вместо от 32-битных чисел с плавающей точкой.
 
-![](img\q.png)
+![](img/Q.png)
 
 *Изображение переведено с сайта [TensorFlow](https://www.tensorflow.org/lite/performance/model_optimization).
 
@@ -229,7 +229,7 @@ open("network_without_optim.tflite", "wb").write(model_no_quant_tflite)
 
 Квантование после обучения - это метод преобразования, который может уменьшить размер модели, а также уменьшить время выполнения. При этом точности модели незначительно уменьшается.
 
-![](img\ptq.png)
+![](img/PTQ.png)
 
 *Изображение переведено с сайта [TensorFlow](https://www.tensorflow.org/lite/performance/post_training_quantization).
 
