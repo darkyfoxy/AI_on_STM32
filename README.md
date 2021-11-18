@@ -6,14 +6,18 @@ Neural network implementation on STM32 with Cube-AI.
 
 Проект для демонстрации работы нейронных сетей на микроконтроллерах STM32.
 
-[Hardware](https://github.com/darkyfoxy/AI_on_STM32#hardware)
-[STMicroelectronics.X-CUBE-AI](https://github.com/darkyfoxy/AI_on_STM32#stmicroelectronicsx-cube-ai)
-[Example with MNIST Dataset](https://github.com/darkyfoxy/AI_on_STM32#example-with-mnist-dataset)
-[Example with CIFAR10 Dataset](https://github.com/darkyfoxy/AI_on_STM32#example-with-cifar10-dataset)
-[Example with CIFAR100 SuperClasses Dataset](https://github.com/darkyfoxy/AI_on_STM32#example-with-cifar100-superclasses-dataset)
-	
-[Example with MobileNet](https://github.com/darkyfoxy/AI_on_STM32#example-with-mobilenet)
-[Copyright](https://github.com/darkyfoxy/AI_on_STM32#copyright)
+- [Hardware](https://github.com/darkyfoxy/AI_on_STM32#hardware)
+- [STMicroelectronics.X-CUBE-AI](https://github.com/darkyfoxy/AI_on_STM32#stmicroelectronicsx-cube-ai)
+- [Example with MNIST Dataset](https://github.com/darkyfoxy/AI_on_STM32#example-with-mnist-dataset)
+- [Example with CIFAR10 Dataset](https://github.com/darkyfoxy/AI_on_STM32#example-with-cifar10-dataset)
+- [Example with CIFAR100 SuperClasses Dataset](https://github.com/darkyfoxy/AI_on_STM32#example-with-cifar100-superclasses-dataset)
+	- [Optimization methods](https://github.com/darkyfoxy/AI_on_STM32#optimization-methods)
+	  - [TensorFlow Lite without optimization](https://github.com/darkyfoxy/AI_on_STM32#tensorflow-lite-without-optimization)
+	  - [TensorFlow Lite with Cube-AI compression (x4/x8)](https://github.com/darkyfoxy/AI_on_STM32#tensorflow-lite-with-cube-ai-compression-x4x8)
+	  - [Quantization](https://github.com/darkyfoxy/AI_on_STM32#quantization)
+	- [Optimization methods comparison](https://github.com/darkyfoxy/AI_on_STM32#optimization-methods-comparison)
+- [Example with MobileNet](https://github.com/darkyfoxy/AI_on_STM32#example-with-mobilenet)
+- [Copyright](https://github.com/darkyfoxy/AI_on_STM32#copyright)
 
 ## Hardware
 
@@ -188,27 +192,7 @@ converter.representative_dataset = representative_dataset
 ## Example with CIFAR100 SuperClasses Dataset
 
 Демонстрация работы нейронной сети для распознавания образов на микроконтроллере STM32H743.
-Классификация производиться на 20 супер-классов:
-0 - aquatic mammals;
-1 - fish;
-2 - flowers;
-3 - food containers;
-4 - fruit and vegetables;
-5 - household electrical devices;
-6 - household furniture;
-7 - insects;
-8 - large carnivores;
-9 - large man-made outdoor things;
-10 - large natural outdoor scenes;
-11 - large omnivores and herbivores;
-12 - medium-sized mammals;
-13 - non-insect invertebrates;
-14 - people;
-15 - reptiles;
-16 - small mammals;
-17 - trees;
-18 - vehicles 1;
-19 - vehicles 2.
+Классификация производиться на 20 супер-классов: 0 - aquatic mammals; 1 - fish; 2 - flowers; 3 - food containers; 4 - fruit and vegetables; 5 - household electrical devices; 6 - household furniture; 7 - insects; 8 - large carnivores; 9 - large man-made outdoor things; 10 - large natural outdoor scenes; 11 - large omnivores and herbivores; 12 - medium-sized mammals; 13 - non-insect invertebrates; 14 - people; 15 - reptiles; 16 - small mammals; 17 - trees; 18 - vehicles 1; 19 - vehicles 2.
 
 Код для обучения нейронной сети, нейронная сеть и выборки для валидации доступны в [репозитории](https://github.com/darkyfoxy/AI_on_STM32/tree/main/network_CIFAR100).
 
@@ -216,7 +200,7 @@ converter.representative_dataset = representative_dataset
 
 Нейронная сеть была обучена с помощью TensorFlow на датасетe CIFAR100.
 
-### Optimization method
+### Optimization methods
 
 #### TensorFlow Lite without optimization
 
@@ -237,7 +221,7 @@ open("network_without_optim.tflite", "wb").write(model_no_quant_tflite)
 
 Квантованные модели - это модели, в которых мы используем параметры с более низкой точностью, такие как 8-битные целые числа вместо от 32-битных чисел с плавающей точкой.
 
-![](img\Q.png)
+![](img\q.png)
 
 *Изображение переведено с сайта [TensorFlow](https://www.tensorflow.org/lite/performance/model_optimization).
 
@@ -245,7 +229,7 @@ open("network_without_optim.tflite", "wb").write(model_no_quant_tflite)
 
 Квантование после обучения - это метод преобразования, который может уменьшить размер модели, а также уменьшить время выполнения. При этом точности модели незначительно уменьшается.
 
-![](img\PTQ.png)
+![](img\ptq.png)
 
 *Изображение переведено с сайта [TensorFlow](https://www.tensorflow.org/lite/performance/post_training_quantization).
 
@@ -406,7 +390,7 @@ INTERNAL ERROR: 'FLOAT16'
 
 ---
 
-### Optimization method comparison
+### Optimization methods comparison
 
 | Optimization         |   Flash   |    RAM    | Time on target |     Accuracy      |
 | :------------------- | :-------: | :-------: | :------------: | :---------------: |
