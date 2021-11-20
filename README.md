@@ -15,6 +15,7 @@ Neural network implementation on STM32 with Cube-AI.
 	  - [TensorFlow Lite without optimization](https://github.com/darkyfoxy/AI_on_STM32#tensorflow-lite-without-optimization)
 	  - [TensorFlow Lite with Cube-AI compression (x4/x8)](https://github.com/darkyfoxy/AI_on_STM32#tensorflow-lite-with-cube-ai-compression-x4x8)
 	  - [Quantization](https://github.com/darkyfoxy/AI_on_STM32#quantization)
+	  - [Parameters pruning](https://github.com/darkyfoxy/AI_on_STM32#parameters_pruning)
 	- [Optimization methods comparison](https://github.com/darkyfoxy/AI_on_STM32#optimization-methods-comparison)
 - [Example with MobileNet](https://github.com/darkyfoxy/AI_on_STM32#example-with-mobilenet)
 - [Copyright](https://github.com/darkyfoxy/AI_on_STM32#copyright)
@@ -386,26 +387,93 @@ Cube-AI:
 INTERNAL ERROR: 'FLOAT16'
 ```
 
+#### Parameters pruning
+
+Метод отсечение веса постепенно обнуляет веса модели в процессе обучения для достижения разреженности модели. Разреженные модели легче сжимать, и мы можем пропустить нули во время выполнения для уменьшения задержки.
+
+Training with pruning:
+
+```python
+prune_low_magnitude = tfmot.sparsity.keras.prune_low_magnitude
+
+batch_size = 64
+epochs = 2
+validation_split = 0.1
+
+num_images = train_images.shape[0] * (1 - validation_split)
+end_step = np.ceil(num_images / batch_size).astype(np.int32) * epochs
+
+pruning_params = {
+      'pruning_schedule': tfmot.sparsity.keras.PolynomialDecay(initial_sparsity=0.30,
+                                                               final_sparsity=0.70,
+                                                               begin_step=0,
+                                                               end_step=end_step)}
+
+model_for_pruning = prune_low_magnitude(model, **pruning_params)
+
+opt = tf.optimizers.SGD(learning_rate=0.001, momentum=0.9)
+model_for_pruning.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+
+callbacks = [
+  tfmot.sparsity.keras.UpdatePruningStep(),
+]
+
+model_for_pruning.fit(train_images, train_labels,
+                      batch_size=batch_size, epochs=epochs, validation_split=validation_split,
+                      callbacks=callbacks)
+```
+
+***Pruning without optimization***
+
+```python
+model_for_export = tfmot.sparsity.keras.strip_pruning(model_for_pruning)
+converter = tf.lite.TFLiteConverter.from_keras_model(model_for_export)
+model_no_quant_tflite = converter.convert()
+
+open("pruning_network_without_optim.tflite", "wb").write(model_no_quant_tflite)
+```
+
+***Pruning without full integer quantization Integer only with inference input/output type (Pruning_FIQ_int_only_IIOT)***
+
+```python
+model_for_export = tfmot.sparsity.keras.strip_pruning(model_for_pruning)
+converter = tf.lite.TFLiteConverter.from_keras_model(model_for_export)
+
+def representative_dataset():
+  for i in range(500):
+    yield([test_images[i].reshape(1, 32, 32, 3).astype(np.float32)])
+
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+converter.representative_dataset = representative_dataset
+converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
+converter.inference_input_type = tf.int8
+converter.inference_output_type = tf.int8
+model_tflite = converter.convert()
+
+open("pruning_network_FIQ_int_only_IIOT.tflite", "wb").write(model_tflite)
+```
+
 
 
 ---
 
 ### Optimization methods comparison
 
-| Optimization         |   Flash   |    RAM    | Time on target |     Accuracy      |
-| :------------------- | :-------: | :-------: | :------------: | :---------------: |
-| without optimization |  1.78 MB  | 196.08 KB |   341.742 ms   | 71.67% (71.67%)** |
-| Cube-AI x4           |  1.75 MB  | 196.08 KB |   343.088 ms   | 71.67% (71.67%)** |
-| Cube-AI x8           |  1.74 MB  | 196.08 KB |   343.069 ms   | 72.67% (72.67%)** |
-| DRQ*                 |     -     |     -     |       -        |         -         |
-| FIQ                  | 458.52 KB | 59.25 KB  |   134.764 ms   | 64.00% (64.00%)** |
-| INT16_INT8*          |     -     |     -     |       -        |         -         |
-| INT16_INT8_BUILTINS* |     -     |     -     |       -        |         -         |
-| BUILTINS*            | 458.52 KB | 59.25 KB  |   134.767 ms   | 64.00% (64.00%)** |
-| FIQ_int_only         | 458.52 KB | 59.25 KB  |   134.775 ms   | 64.00% (64.00%)** |
-| FIQ_int_only_IIOT    | 458.52 KB | 49.92 KB  |   134.938 ms   | 64.00% (64.00%)** |
-| float16*             |     -     |     -     |       -        |         -         |
-|                      |           |           |                |                   |
+| Optimization                 |   Flash   |    RAM    | Time on target |     Accuracy      |
+| :--------------------------- | :-------: | :-------: | :------------: | :---------------: |
+| without optimization         |  1.78 MB  | 196.08 KB |   341.742 ms   | 71.67% (71.67%)** |
+| Cube-AI x4                   |  1.75 MB  | 196.08 KB |   343.088 ms   | 71.67% (71.67%)** |
+| Cube-AI x8                   |  1.74 MB  | 196.08 KB |   343.069 ms   | 72.67% (72.67%)** |
+| DRQ*                         |     -     |     -     |       -        |         -         |
+| FIQ                          | 458.52 KB | 59.25 KB  |   134.764 ms   | 64.00% (64.00%)** |
+| INT16_INT8*                  |     -     |     -     |       -        |         -         |
+| INT16_INT8_BUILTINS*         |     -     |     -     |       -        |         -         |
+| BUILTINS                     | 458.52 KB | 59.25 KB  |   134.767 ms   | 64.00% (64.00%)** |
+| FIQ_int_only                 | 458.52 KB | 59.25 KB  |   134.775 ms   | 64.00% (64.00%)** |
+| FIQ_int_only_IIOT            | 458.52 KB | 49.92 KB  |   134.938 ms   | 64.00% (64.00%)** |
+| float16*                     |     -     |     -     |       -        |         -         |
+| pruning without optimization |  1.78 MB  | 196.08 KB |   341.716 ms   | 65.33% (65.33%)** |
+| Pruning_FIQ_int_only_IIOT    | 458.52 KB | 49.92 KB  |   134.956 ms   | 47.33% (47.33%)** |
 
 *Cube-AI ERROR;
 
