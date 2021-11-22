@@ -200,7 +200,7 @@ converter.representative_dataset = representative_dataset
 
 С помощью генератора кода STM32CubeMX и расширения X-CUBE-AI нейронная сеть была реализована на микроконтроллер STM32H743.
 
-
+![Cifar100h](https://user-images.githubusercontent.com/51966677/142917135-c12216a9-c27b-4db9-9d79-05e9edbdf95b.gif)
 
 Нейронная сеть была обучена с помощью TensorFlow на датасетe CIFAR100.
 
@@ -482,7 +482,7 @@ clustered_model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=
 clustered_model.fit(train_images, train_labels, batch_size=500, epochs=3, validation_data=(test_images, test_labels))
 ```
 
-*** Clustering without optimization***
+***Clustering without optimization***
 
 ```python
 final_model = tfmot.clustering.keras.strip_clustering(clustered_model)
@@ -492,7 +492,7 @@ model_no_quant_tflite = converter.convert()
 open("clustered_network_without_optim.tflite", "wb").write(model_no_quant_tflite)
 ```
 
-*** Clustering without full integer quantization Integer only with inference input/output type (Clustering_FIQ_int_only_IIOT)***
+***Clustering without full integer quantization Integer only with inference input/output type (Clustering_FIQ_int_only_IIOT)***
 
 ```python
 final_model = tfmot.clustering.keras.strip_clustering(clustered_model)
