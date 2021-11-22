@@ -15,7 +15,8 @@ Neural network implementation on STM32 with Cube-AI.
 	  - [TensorFlow Lite without optimization](https://github.com/darkyfoxy/AI_on_STM32#tensorflow-lite-without-optimization)
 	  - [TensorFlow Lite with Cube-AI compression (x4/x8)](https://github.com/darkyfoxy/AI_on_STM32#tensorflow-lite-with-cube-ai-compression-x4x8)
 	  - [Quantization](https://github.com/darkyfoxy/AI_on_STM32#quantization)
-	  - [Parameters pruning](https://github.com/darkyfoxy/AI_on_STM32#parameters_pruning)
+	  - [Parameters pruning](https://github.com/darkyfoxy/AI_on_STM32#parameters-pruning)
+	  - [Weight clustering](https://github.com/darkyfoxy/AI_on_STM32#weight-clustering)
 	- [Optimization methods comparison](https://github.com/darkyfoxy/AI_on_STM32#optimization-methods-comparison)
 - [Example with MobileNet](https://github.com/darkyfoxy/AI_on_STM32#example-with-mobilenet)
 - [Copyright](https://github.com/darkyfoxy/AI_on_STM32#copyright)
@@ -199,9 +200,13 @@ converter.representative_dataset = representative_dataset
 
 С помощью генератора кода STM32CubeMX и расширения X-CUBE-AI нейронная сеть была реализована на микроконтроллер STM32H743.
 
+
+
 Нейронная сеть была обучена с помощью TensorFlow на датасетe CIFAR100.
 
 ### Optimization methods
+
+![](img/optim.png)
 
 #### TensorFlow Lite without optimization
 
@@ -453,27 +458,81 @@ model_tflite = converter.convert()
 open("pruning_network_FIQ_int_only_IIOT.tflite", "wb").write(model_tflite)
 ```
 
+#### Weight clustering
 
+Кластеризация веса уменьшает количество уникальных значений веса в модели, что дает преимущества при сжатия модели.
+
+Training with clustering:
+
+```python
+cluster_weights = tfmot.clustering.keras.cluster_weights
+CentroidInitialization = tfmot.clustering.keras.CentroidInitialization
+
+clustering_params = {
+  'number_of_clusters': 16,
+  'cluster_centroids_init': CentroidInitialization.KMEANS_PLUS_PLUS
+}
+
+clustered_model = cluster_weights(model, **clustering_params)
+
+
+opt = tf.optimizers.SGD(learning_rate=0.001, momentum=0.9)
+clustered_model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+
+clustered_model.fit(train_images, train_labels, batch_size=500, epochs=3, validation_data=(test_images, test_labels))
+```
+
+*** Clustering without optimization***
+
+```python
+final_model = tfmot.clustering.keras.strip_clustering(clustered_model)
+converter = tf.lite.TFLiteConverter.from_keras_model(final_model)
+model_no_quant_tflite = converter.convert()
+
+open("clustered_network_without_optim.tflite", "wb").write(model_no_quant_tflite)
+```
+
+*** Clustering without full integer quantization Integer only with inference input/output type (Clustering_FIQ_int_only_IIOT)***
+
+```python
+final_model = tfmot.clustering.keras.strip_clustering(clustered_model)
+converter = tf.lite.TFLiteConverter.from_keras_model(final_model)
+
+def representative_dataset():
+  for i in range(500):
+    yield([test_images[i].reshape(1, 32, 32, 3).astype(np.float32)])
+
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+converter.representative_dataset = representative_dataset
+converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
+converter.inference_input_type = tf.int8
+converter.inference_output_type = tf.int8
+model_tflite = converter.convert()
+
+open("clustered_network_FIQ_int_only_IIOT.tflite", "wb").write(model_tflite)
+```
 
 ---
 
 ### Optimization methods comparison
 
-| Optimization                 |   Flash   |    RAM    | Time on target |     Accuracy      |
-| :--------------------------- | :-------: | :-------: | :------------: | :---------------: |
-| without optimization         |  1.78 MB  | 196.08 KB |   341.742 ms   | 71.67% (71.67%)** |
-| Cube-AI x4                   |  1.75 MB  | 196.08 KB |   343.088 ms   | 71.67% (71.67%)** |
-| Cube-AI x8                   |  1.74 MB  | 196.08 KB |   343.069 ms   | 72.67% (72.67%)** |
-| DRQ*                         |     -     |     -     |       -        |         -         |
-| FIQ                          | 458.52 KB | 59.25 KB  |   134.764 ms   | 64.00% (64.00%)** |
-| INT16_INT8*                  |     -     |     -     |       -        |         -         |
-| INT16_INT8_BUILTINS*         |     -     |     -     |       -        |         -         |
-| BUILTINS                     | 458.52 KB | 59.25 KB  |   134.767 ms   | 64.00% (64.00%)** |
-| FIQ_int_only                 | 458.52 KB | 59.25 KB  |   134.775 ms   | 64.00% (64.00%)** |
-| FIQ_int_only_IIOT            | 458.52 KB | 49.92 KB  |   134.938 ms   | 64.00% (64.00%)** |
-| float16*                     |     -     |     -     |       -        |         -         |
-| pruning without optimization |  1.78 MB  | 196.08 KB |   341.716 ms   | 65.33% (65.33%)** |
-| Pruning_FIQ_int_only_IIOT    | 458.52 KB | 49.92 KB  |   134.956 ms   | 47.33% (47.33%)** |
+| Optimization                    |   Flash   |    RAM    | Time on target |     Accuracy      |
+| :------------------------------ | :-------: | :-------: | :------------: | :---------------: |
+| without optimization            |  1.78 MB  | 196.08 KB |   341.742 ms   | 71.67% (71.67%)** |
+| Cube-AI x4                      |  1.75 MB  | 196.08 KB |   343.088 ms   | 71.67% (71.67%)** |
+| Cube-AI x8                      |  1.74 MB  | 196.08 KB |   343.069 ms   | 72.67% (72.67%)** |
+| DRQ*                            |     -     |     -     |       -        |         -         |
+| FIQ                             | 458.52 KB | 59.25 KB  |   134.764 ms   | 64.00% (64.00%)** |
+| INT16_INT8*                     |     -     |     -     |       -        |         -         |
+| INT16_INT8_BUILTINS*            |     -     |     -     |       -        |         -         |
+| BUILTINS                        | 458.52 KB | 59.25 KB  |   134.767 ms   | 64.00% (64.00%)** |
+| FIQ_int_only                    | 458.52 KB | 59.25 KB  |   134.775 ms   | 64.00% (64.00%)** |
+| FIQ_int_only_IIOT               | 458.52 KB | 49.92 KB  |   134.938 ms   | 64.00% (64.00%)** |
+| float16*                        |     -     |     -     |       -        |         -         |
+| Pruning without optimization    |  1.78 MB  | 196.08 KB |   341.716 ms   | 65.33% (65.33%)** |
+| Pruning_FIQ_int_only_IIOT       | 458.52 KB | 49.92 KB  |   134.956 ms   | 47.33% (47.33%)** |
+| Clustering without optimization |  1.78 MB  | 196.08 KB |   341.727 ms   | 68.00% (68.00%)** |
+| Clustering_FIQ_int_only_IIOT    | 458.52 KB | 49.92 KB  |   134.942 ms   | 65.33% (65.33%)** |
 
 *Cube-AI ERROR;
 

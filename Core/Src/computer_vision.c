@@ -36,6 +36,7 @@
 #include "app_x-cube-ai.h"
 #include "ili9163.h"
 #include "imagnet_lables.h"
+#include "cifar_superclasses.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -62,6 +63,11 @@ static uint8_t CIFAR_Ai_calculate(uint16_t *frameBuffer);
 #else
 static uint8_t Q_CIFAR_Ai_calculate(uint16_t *frameBuffer);
 #endif
+
+#ifdef QUANT
+static uint8_t Q_CIFAR100_Ai_calculate(uint16_t *frameBuffer);
+#endif
+
 
 #ifndef QUANT
 static uint8_t MNIST_Ai_calculate(uint16_t *frameBuffer);
@@ -162,6 +168,55 @@ static uint8_t Q_CIFAR_Ai_calculate(uint16_t *frameBuffer)
 	int8_t max = output[0];
 
 	for(int g = 1; g < 10; g++)
+	{
+		if(max < output[g])
+		{
+			res = g;
+			max = output[g];
+		}
+	}
+	return res;
+}
+#endif
+
+#ifdef QUANT
+/**
+  * @brief  The function to preparing data for the CIFAR100 network with quantization,
+  * 		starting the network and calculating a maximum element of a network output
+  * @note	See computer_vision.h for a definition of GUI
+  * @param  frameBuffer a pointer on a frame buffer with RGB565 values (size 128*128)
+  * @retval res a uint8_t value with a number of a max item in a network output
+  */
+static uint8_t Q_CIFAR100_Ai_calculate(uint16_t *frameBuffer)
+{
+	int8_t input[32][32][3];
+	int8_t output[20];
+
+	for(int i = 0; i < 32; i ++)
+	{
+		for(int j = 0; j < 32; j ++)
+		{
+			uint16_t RGB_sample = frameBuffer[(128*32) + 32 + (i*128*2) + (j*2)];
+			float B = (float)(RGB_sample & 0x1f) / 32.0;
+			float G = (float)((RGB_sample >> 6) & 0x1f) / 32.0;
+			float R = (float)(RGB_sample >> 11) / 32.0;
+
+			input[i][j][0] = (int8_t)((R - 0.5) * 255);
+			input[i][j][1] = (int8_t)((G - 0.5) * 255);
+			input[i][j][2] = (int8_t)((B - 0.5) * 255);
+		}
+	}
+
+
+
+	SCB_EnableDCache();
+	my_ai_run((void *)input, (void *)output);
+	SCB_DisableDCache();
+
+	uint8_t res = 0;
+	int8_t max = output[0];
+
+	for(int g = 1; g < 20; g++)
 	{
 		if(max < output[g])
 		{
@@ -421,7 +476,7 @@ void MNIST_AI_block(uint16_t *imag_trans)
 
 /**
   * @brief  The function to CIFAR network computing and GUI rendering
-  * @note	See computer_vision.h for a definition of GUI and QUANT.
+  * @note	See computer_vision.h for a definition of GUI and QUANT
   * @param  imag_trans a pointer on a frame buffer with RGB565 values (size 128*128)
   * @retval void
   */
@@ -439,7 +494,7 @@ void CIFAR_AI_block(uint16_t *imag_trans)
 
 #if defined GUI
   ILI9163_fillRect(imag_trans, 70, 0, 128, 20, 0xffff);
-  ILI9163_fillRect(imag_trans, 0, 128-20, 128, 128, 0xffff);
+  ILI9163_fillRect(imag_trans, 0, 107, 128, 128, 0xffff);
 
 
   ILI9163_drawChar(imag_trans, 103 - (3*11), 1, 'f', Font_11x18, 0x0);
@@ -453,6 +508,46 @@ void CIFAR_AI_block(uint16_t *imag_trans)
   }
 
   ILI9163_drawChar(imag_trans, 120, 109, number+0x30, Font_7x10, 0x0);
+
+  Non_HAL_CON_UInt_to_DecString_8bit(fps, string_buf, sizeof(string_buf));
+  for(int i = 0; string_buf[i] != 0x0; i++)
+  {
+	ILI9163_drawChar(imag_trans, 105 + (i*11), 1, string_buf[i], Font_11x18, 0x0);
+  }
+#endif
+}
+
+/**
+  * @brief  The function to CIFAR100 network computing and GUI rendering
+  * @note	See computer_vision.h for a definition of GUI and QUANT
+  * @note	It work with #define QUANT in computer_vision.h only
+  * @param  imag_trans a pointer on a frame buffer with RGB565 values (size 128*128)
+  * @retval void
+  */
+void CIFAR100_AI_block(uint16_t *imag_trans)
+{
+#if defined GUI
+  ILI9163_drawRect(imag_trans, 30, 30, 98, 98,  2,  0x1f<<11);
+#endif
+
+#ifdef QUANT
+  uint8_t number = Q_CIFAR100_Ai_calculate(imag_trans);
+#endif
+
+#if defined GUI
+  ILI9163_fillRect(imag_trans, 70, 0, 128, 20, 0xffff);
+  ILI9163_fillRect(imag_trans, 0, 117, 128, 128, 0xffff);
+
+
+  ILI9163_drawChar(imag_trans, 103 - (3*11), 1, 'f', Font_11x18, 0x0);
+  ILI9163_drawChar(imag_trans, 103 - (2*11), 1, 'p', Font_11x18, 0x0);
+  ILI9163_drawChar(imag_trans, 103 - (1*11), 1, 's', Font_11x18, 0x0);
+  ILI9163_drawChar(imag_trans, 99, 1, ':', Font_11x18, 0x0);
+
+  for(int i = 0; cifar_superclasses[number][i] != 0; i++)
+  {
+	  ILI9163_drawChar(imag_trans, 1 + (i*7), 118, cifar_superclasses[number][i], Font_7x10, 0x00);
+  }
 
   Non_HAL_CON_UInt_to_DecString_8bit(fps, string_buf, sizeof(string_buf));
   for(int i = 0; string_buf[i] != 0x0; i++)
@@ -499,7 +594,6 @@ void MobileNet_AI_block(uint16_t *imag_trans)
 	  ILI9163_drawChar(imag_trans, 0, 118 - (m*10), 0x35 - m, Font_7x10, 0x00);
 	  for(int i = 0; mobilenet_lables[number][i] != 0; i++)
 	  {
-
 		  ILI9163_drawChar(imag_trans, 7 + (i*7), 118 - (m*10), mobilenet_lables[number][i], Font_7x10, 0x00);
 	  }
   }
