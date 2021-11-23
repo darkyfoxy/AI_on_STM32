@@ -19,6 +19,8 @@ Neural network implementation on STM32 with Cube-AI.
 	  - [Weight clustering](https://github.com/darkyfoxy/AI_on_STM32#weight-clustering)
 	- [Optimization methods comparison](https://github.com/darkyfoxy/AI_on_STM32#optimization-methods-comparison)
 - [Example with MobileNet](https://github.com/darkyfoxy/AI_on_STM32#example-with-mobilenet)
+  - [Models comparison](https://github.com/darkyfoxy/AI_on_STM32#models-comparison)
+- [Example with person detection](https://github.com/darkyfoxy/AI_on_STM32#example-with-person-detection)
 - [Copyright](https://github.com/darkyfoxy/AI_on_STM32#copyright)
 
 ## Hardware
@@ -37,6 +39,20 @@ Neural network implementation on STM32 with Cube-AI.
 
 Для всех экспериментов использовался пакет программного обеспечения **STMicroelectronics.X-CUBE-AI.6.0.0**
 
+Для использования примеров нужно выбрать нужную функцию в файле `main.h`:
+
+```c
+//MNIST_AI_block((uint16_t *)ai_buff_pointer);
+//CIFAR_AI_block((uint16_t *)ai_buff_pointer);
+//CIFAR100_AI_block((uint16_t *)ai_buff_pointer); //work with #define QUANT in computer_vision.h only
+//MobileNet_AI_block((uint16_t *)ai_buff_pointer);
+Person_detect_AI_block((uint16_t *)ai_buff_pointer);
+```
+
+Функции определены в файле `computer_vision.c`. В файле `computer_vision.c` определены **GUI** и **QUANT**.
+
+Не забудьте указать нужную нейронную сеть в **STM32CubeMX**.
+
 ## Example with MNIST Dataset
 
 Демонстрация работы нейронной сети для распознавания рукописных цифр на микроконтроллере STM32H743.
@@ -49,15 +65,15 @@ Neural network implementation on STM32 with Cube-AI.
 
 **PyTorch and ONNX**
 
-Нейронная сеть была обучена с помощью PyTorch на датасетe MNIST. После этого экспортирована в граф вычислений в формате **ONNX**.
+Нейронная сеть была обучена с помощью PyTorch на датасете MNIST. После этого экспортирована в граф вычислений в формате **ONNX**.
 
 **Keras**
 
-Нейронная сеть была обучена с помощью TensorFlow на датасетe MNIST. После этого сохранена в формате **Keras** H5.
+Нейронная сеть была обучена с помощью TensorFlow на датасете MNIST. После этого сохранена в формате **Keras** H5.
 
 **TensorFlow Lite**
 
-Нейронная сеть была обучена с помощью TensorFlow на датасетe MNIST.
+Нейронная сеть была обучена с помощью TensorFlow на датасете MNIST.
 
 После этого сохранена в формате **TF Lite** без квантования и с квантованием весов до *int8* (**TF Lite (Quant)**).
 
@@ -202,7 +218,7 @@ converter.representative_dataset = representative_dataset
 
 ![Cifar100h](https://user-images.githubusercontent.com/51966677/142917135-c12216a9-c27b-4db9-9d79-05e9edbdf95b.gif)
 
-Нейронная сеть была обучена с помощью TensorFlow на датасетe CIFAR100.
+Нейронная сеть была обучена с помощью TensorFlow на датасете CIFAR100.
 
 ### Optimization methods
 
@@ -551,7 +567,7 @@ open("clustered_network_FIQ_int_only_IIOT.tflite", "wb").write(model_tflite)
 
 ---
 
-#### Model comparison
+### Models comparison
 
 | Name                        |   Flash   |     RAM     | Time on target | Top-1* | Top-5* |
 | --------------------------- | :-------: | :---------: | :------------: | :----: | :----: |
@@ -567,6 +583,24 @@ open("clustered_network_FIQ_int_only_IIOT.tflite", "wb").write(model_tflite)
 *From [TensorFlow site](https://www.tensorflow.org/lite/guide/hosted_models).
 
 **region RAM_D1 overflowed
+
+## Example with person detection
+
+Демонстрация работы нейронной сети для распознавания образа человека на микроконтроллере STM32H743.
+
+Нейронная сеть доступна на [GitHub](https://github.com/tensorflow/tflite-micro/tree/main/tensorflow/lite/micro/models).
+
+С помощью генератора кода STM32CubeMX и расширения X-CUBE-AI нейронная сеть была реализована на микроконтроллер STM32H743.
+
+![](img/person_detect.jpg)
+
+Model parameters:
+
+**Flash** - 213.79 KB;
+
+**RAM** - 46.35 KB;
+
+**Time on target** - 33.737 ms.  
 
 
 ## Copyright

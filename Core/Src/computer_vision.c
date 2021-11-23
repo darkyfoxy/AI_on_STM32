@@ -399,6 +399,42 @@ static void MobileNet_Ai_calculate(uint16_t *frameBuffer, uint16_t *lables)
 	}
 }
 
+
+/**
+  * @brief  The function to preparing data for the person_detect network with quantization,
+  * 		starting the network and calculating a maximum element of a network output
+  * @note	See computer_vision.h for a definition of GUI
+  * @param  frameBuffer a pointer on a frame buffer with RGB565 values (size 128*128)
+  * @retval res a uint8_t value with a number of a max item in a network output
+  */
+static uint8_t Person_detect_Ai_calculate(uint16_t *frameBuffer)
+{
+	int8_t input[96][96];
+	int8_t output[2];
+
+	for(int i = 0; i < 96; i ++)
+	{
+		for(int j = 0; j < 96; j ++)
+		{
+			uint16_t RGB_sample = frameBuffer[(128*16) + 16 + (i*128) + (j)];
+			float B = (float)(RGB_sample & 0x1f) / 128.0;
+			float G = (float)((RGB_sample >> 5) & 0x3f) / 128.0;
+			float R = (float)(RGB_sample >> 11) / 128.0;
+			float sum = (R + G + B);
+
+			input[i][j] = (int8_t)((sum - 0.5) * 255);
+		}
+	}
+
+	SCB_EnableDCache();
+	my_ai_run((void *)input, (void *)output);
+	SCB_DisableDCache();
+
+	uint8_t res = (uint8_t)((float)(output[1] + 128) * 0.39);
+	return res;
+}
+
+
 /**
   * @brief  The function to convert an uint8_t value to a character string
   *         with decimal symbols (from 0 to 9)
@@ -602,6 +638,48 @@ void MobileNet_AI_block(uint16_t *imag_trans)
   for(int i = 0; string_buf[i] != 0; i++)
   {
 	  ILI9163_drawChar(imag_trans, 113 + (i*7), 1, string_buf[i], Font_7x10, 0x0);
+  }
+#endif
+}
+
+/**
+  * @brief  The function to MobileNet network computing and GUI rendering
+  * @note	See person_detect.h for a definition of GUI.
+  * @param  imag_trans a pointer on a frame buffer with RGB565 values (size 128*128)
+  * @retval void
+  */
+void Person_detect_AI_block(uint16_t *imag_trans)
+{
+  uint8_t number = Person_detect_Ai_calculate(imag_trans);
+
+#if defined GUI
+  ILI9163_fillRect(imag_trans, 70, 0, 128, 20, 0xffff);
+  ILI9163_fillRect(imag_trans, 0, 109, 128, 128, 0xffff);
+
+
+  ILI9163_drawChar(imag_trans, 103 - (3*11), 1, 'f', Font_11x18, 0x0);
+  ILI9163_drawChar(imag_trans, 103 - (2*11), 1, 'p', Font_11x18, 0x0);
+  ILI9163_drawChar(imag_trans, 103 - (1*11), 1, 's', Font_11x18, 0x0);
+  ILI9163_drawChar(imag_trans, 99, 1, ':', Font_11x18, 0x0);
+
+  char *str_person = "person";
+  for(int i = 0; str_person[i] != 0x0; i++)
+  {
+    ILI9163_drawChar(imag_trans, 1 + (i*11), 110, str_person[i], Font_11x18, 0x0);
+  }
+  ILI9163_drawChar(imag_trans, 64, 110, ':', Font_11x18, 0x0);
+  ILI9163_drawChar(imag_trans, 94, 110, '%', Font_11x18, 0x0);
+
+  Non_HAL_CON_UInt_to_DecString_8bit(number, string_buf, sizeof(string_buf));
+  for(int i = 0; string_buf[i] != 0x0; i++)
+  {
+  	ILI9163_drawChar(imag_trans, 72 + (i*11), 110, string_buf[i], Font_11x18, 0x0);
+  }
+
+  Non_HAL_CON_UInt_to_DecString_8bit(fps, string_buf, sizeof(string_buf));
+  for(int i = 0; string_buf[i] != 0x0; i++)
+  {
+	ILI9163_drawChar(imag_trans, 105 + (i*11), 1, string_buf[i], Font_11x18, 0x0);
   }
 #endif
 }

@@ -58,5 +58,6 @@ void MNIST_AI_block(uint16_t *imag_trans);
 void CIFAR_AI_block(uint16_t *imag_trans);
 void CIFAR100_AI_block(uint16_t *imag_trans);
 void MobileNet_AI_block(uint16_t *imag_trans);
+void Person_detect_AI_block(uint16_t *imag_trans);
 
 #endif /* INC_COMPUTER_VISION_H_ */

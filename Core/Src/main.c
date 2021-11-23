@@ -211,8 +211,9 @@ int main(void)
 
 		  //MNIST_AI_block((uint16_t *)ai_buff_pointer);
 		  //CIFAR_AI_block((uint16_t *)ai_buff_pointer);
-		  CIFAR100_AI_block((uint16_t *)ai_buff_pointer); //work with #define QUANT in computer_vision.h only
+		  //CIFAR100_AI_block((uint16_t *)ai_buff_pointer); //work with #define QUANT in computer_vision.h only
 		  //MobileNet_AI_block((uint16_t *)ai_buff_pointer);
+		  Person_detect_AI_block((uint16_t *)ai_buff_pointer);
 
 		  while(HAL_GPIO_ReadPin(K1_GPIO_Port, K1_Pin) == GPIO_PIN_RESET){}
 
