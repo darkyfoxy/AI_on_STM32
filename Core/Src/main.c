@@ -134,7 +134,6 @@ int main(void)
 
   /* USER CODE BEGIN Init */
 
-
   fps_counter = 0;
 
   /* USER CODE END Init */
@@ -176,7 +175,6 @@ int main(void)
   int8_t *hdmi_buff_pointer;
   int8_t *spi_buff_pointer;
   int8_t *ai_buff_pointer;
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
